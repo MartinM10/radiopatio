@@ -1,0 +1,129 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Alerta Vecinal — producción (VPS: Oracle Cloud ARM / cualquier host Unix)
+#
+# Uso (ver docs/DEPLOY.md):
+#   cd deploy && cp .env.example .env   # rellena secretos reales
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+#
+# Deliberadamente portado/limitado:
+#   - PostgreSQL SIN puertos publicados (solo red interna)
+#   - Solo Caddy expone 80/443 (TLS automático)
+#   - Límites de memoria: convivencia civilizada con otros servicios (Myrmo)
+#   - NODE_ENV=production: sin seeds de demostración
+# ─────────────────────────────────────────────────────────────────────────────
+name: alerta-vecinal-prod
+
+x-common: &common
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    <<: *common
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: 2g
+    # Intención: NADA de puertos publicados. Solo redes internas.
+
+  server:
+    build:
+      context: ../server
+    restart: unless-stopped
+    <<: *common
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DEVICE_SALT: ${DEVICE_SALT}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-600}
+      PURGE_INTERVAL_MINUTES: ${PURGE_INTERVAL_MINUTES:-15}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+    mem_limit: 1g
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    <<: *common
+    ports:
+      - "${HTTP_BIND:-0.0.0.0:80}:80"
+      - "${HTTPS_BIND:-0.0.0.0:443}:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - server
+    mem_limit: 192m
+
+  # Backups automáticos: pg_dump comprimido cada 24 h con retención de 14 días.
+  # Copia fuera del servidor (rsync/S3) al menos una vez a la semana: docs/DEPLOY.md.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    <<: *common
+    profiles:
+      - backups
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+    volumes:
+      - backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - |
+        echo '[backups] dump diario a /backups, retención '$${RETENTION_DAYS}' días';
+        while true; do
+          ts=$$(date +%Y%m%d_%H%M%S)
+          pg_dump -h db -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -F c -f "/backups/av_$${ts}.dump" \
+            && echo "[backups] ok av_$${ts}.dump" \
+            || echo "[backups] ERROR en pg_dump";
+          find /backups -name 'av_*.dump' -mtime +"$${RETENTION_DAYS}" -delete
+          sleep "$${BACKUP_INTERVAL_HOURS}"h 2>/dev/null || sleep 86400
+        done
+    mem_limit: 128m
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+  backups:
+
+# Red por defecto del proyecto: aislada de otras stacks del host (Myrmo).

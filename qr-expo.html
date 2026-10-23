@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Alerta Vecinal — abrir en Expo Go</title>
+<style>
+  body { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; background:#0b1020; color:#cbd2ec; display:flex; flex-direction:column; align-items:center; gap:14px; padding:40px; }
+  h1 { font-size:20px; margin:0; }
+  #qr { background:#fff; padding:16px; border-radius:16px; }
+  .url { font-family: Consolas, monospace; background:#161d3a; padding:10px 16px; border-radius:10px; }
+  .hint { max-width:520px; text-align:center; font-size:13px; line-height:19px; color:#8b93b8; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+  <h1>Alerta Vecinal — escanea con Expo Go</h1>
+  <div id="qr"></div>
+  <div class="url" id="url">exp://</div>
+  <div class="hint">
+    Móvil y PC en la <b>misma wifi</b>. En Expo Go también puedes escribir la URL a mano
+    («Enter URL manually»). Si no conecta, abre en el firewall de Windows los puertos
+    8081, 3000 y 19000-19001 para redes privadas.
+  </div>
+  <script>
+    const url = new URLSearchParams(location.search).get('url') || 'exp://IP-DE-TU-PC:8081';
+    document.getElementById('url').textContent = url;
+    new QRCode(document.getElementById('qr'), { text: url, width: 320, height: 320, correctLevel: 1 });
+  </script>
+</body>
+</html>

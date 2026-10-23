@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Alerta Vecinal",
+    "slug": "alerta-vecinal",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B1020",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.alertavecinal",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Tu ubicación se usa solo para centrar el mapa y ayudarte a situar el aviso."
+      }
+    },
+    "android": {
+      "package": "app.alertavecinal",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1020",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

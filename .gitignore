@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+web-build/
+deploy/.env
+deploy/.env.*
+!deploy/.env.example
+
+# Entorno local (IP de tu PC, etc.). Copia .env.example a .env
+.env

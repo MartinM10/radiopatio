@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://cambiar-por-la-url-de-produccion.es"
+      },
+      "description": "APK firmada para instalar directo (piloto interno): enlace descargable en expo.dev"
+    },
+    "production": {
+      "android": {
+        "buildType": "aab"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://cambiar-por-la-url-de-produccion.es"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
