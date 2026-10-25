@@ -1,5 +1,8 @@
+import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppIcon } from '../components/AppIcon';
+import { CategoryIcon } from '../components/CategoryIcon';
 import { IncidentCard } from '../components/IncidentCard';
 import { OpenStreetMap } from '../components/OpenStreetMap';
 import { categories, categoryById } from '../data/categories';
@@ -71,15 +74,20 @@ export const HomeScreen = () => {
   const level =
     !userLoc
       ? {
-          label: 'Zona desconocida',
-          color: colors.muted,
-          text: 'Permite la ubicación para ver la alerta de tu zona y los avisos cercanos.',
+          label: 'Ubicación desactivada',
+          color: colors.accent,
+          text: 'Toca para activar GPS y calcular el nivel de riesgo de tu calle.',
         }
       : score < 4
         ? { label: 'Tranquilo', color: colors.ok, text: `Zona en calma ${periodText} (${nearText}).` }
         : score < 9
           ? { label: 'Atención', color: colors.warn, text: `Incidencias registradas ${periodText} (${nearText}).` }
           : { label: 'Alerta vecinal', color: colors.danger, text: `Delincuencia activa en tu entorno ${periodText} (${nearText}).` };
+
+  const onSelectTimeframe = (tf: '24h' | 'week' | 'month') => {
+    setTimeframe(tf);
+    Haptics.selectionAsync().catch(() => {});
+  };
 
   return (
     <ScrollView
@@ -95,20 +103,32 @@ export const HomeScreen = () => {
         <Text style={styles.tfLabel}>Periodo:</Text>
         <View style={styles.tfPills}>
           <Pressable
-            style={[styles.tfBtn, timeframe === '24h' && styles.tfBtnActive]}
-            onPress={() => setTimeframe('24h')}
+            style={({ pressed }) => [
+              styles.tfBtn,
+              timeframe === '24h' && styles.tfBtnActive,
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={() => onSelectTimeframe('24h')}
           >
             <Text style={[styles.tfBtnText, timeframe === '24h' && styles.tfBtnTextActive]}>24 h</Text>
           </Pressable>
           <Pressable
-            style={[styles.tfBtn, timeframe === 'week' && styles.tfBtnActive]}
-            onPress={() => setTimeframe('week')}
+            style={({ pressed }) => [
+              styles.tfBtn,
+              timeframe === 'week' && styles.tfBtnActive,
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={() => onSelectTimeframe('week')}
           >
             <Text style={[styles.tfBtnText, timeframe === 'week' && styles.tfBtnTextActive]}>Semana</Text>
           </Pressable>
           <Pressable
-            style={[styles.tfBtn, timeframe === 'month' && styles.tfBtnActive]}
-            onPress={() => setTimeframe('month')}
+            style={({ pressed }) => [
+              styles.tfBtn,
+              timeframe === 'month' && styles.tfBtnActive,
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={() => onSelectTimeframe('month')}
           >
             <Text style={[styles.tfBtnText, timeframe === 'month' && styles.tfBtnTextActive]}>Mes</Text>
           </Pressable>
@@ -116,8 +136,30 @@ export const HomeScreen = () => {
       </View>
 
       {/* Resumen del nivel de alerta */}
-      <View style={[styles.levelCard, { borderColor: level.color + '66' }]}>
-        <View style={[styles.levelDot, { backgroundColor: level.color }]} />
+      <Pressable
+        onPress={() => {
+          if (!userLoc) {
+            getUserLocation(true).then((loc) => {
+              if (loc) {
+                setUserLoc(loc);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+              }
+            });
+          }
+        }}
+        style={({ pressed }) => [
+          styles.levelCard,
+          { borderColor: level.color + '55' },
+          !userLoc && pressed && { opacity: 0.8, transform: [{ scale: 0.99 }] },
+        ]}
+      >
+        <View style={[styles.levelIconBadge, { backgroundColor: level.color + '20', borderColor: level.color + '45' }]}>
+          <AppIcon
+            name={!userLoc ? 'map-pin' : score >= 9 ? 'shield-alert' : 'shield-check'}
+            color={level.color}
+            size={20}
+          />
+        </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.levelTitle, { color: level.color }]}>{level.label}</Text>
           <Text style={styles.levelText}>{level.text}</Text>
@@ -126,15 +168,16 @@ export const HomeScreen = () => {
           <Text style={styles.countNum}>{nearbyInPeriod.length}</Text>
           <Text style={styles.countLbl}>{timeframe === 'week' ? 'en 7 días' : timeframe === 'month' ? 'en 30 días' : 'en 24 h'}</Text>
         </View>
-      </View>
+      </Pressable>
 
       {/* Filtros de categoría */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <Chip label="Todo" active={filter === 'all'} onPress={() => setFilter('all')} />
+        <Chip id="all" label="Todo" active={filter === 'all'} onPress={() => setFilter('all')} />
         {categories.map((c) => (
           <Chip
             key={c.id}
-            label={`${c.emoji} ${c.label}`}
+            id={c.id}
+            label={c.label}
             active={filter === c.id}
             onPress={() => setFilter(c.id)}
           />
@@ -184,8 +227,31 @@ export const HomeScreen = () => {
   );
 };
 
-const Chip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
-  <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
+const Chip = ({
+  id,
+  label,
+  active,
+  onPress,
+}: {
+  id: CategoryId | 'all';
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) => (
+  <Pressable
+    onPress={() => {
+      Haptics.selectionAsync().catch(() => {});
+      onPress();
+    }}
+    accessibilityRole="button"
+    accessibilityLabel={`Filtrar por ${label}`}
+    style={({ pressed }) => [
+      styles.chip,
+      active && styles.chipOn,
+      pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
+    ]}
+  >
+    <CategoryIcon id={id} color={active ? '#fff' : colors.muted} size={14} strokeWidth={2.2} />
     <Text style={[styles.chipText, active && { color: '#fff' }]}>{label}</Text>
   </Pressable>
 );
@@ -240,6 +306,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
   },
+  levelIconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   levelDot: { width: 12, height: 12, borderRadius: 6 },
   levelTitle: { fontSize: 17, fontWeight: '800' },
   levelText: { color: colors.muted, fontSize: 13, marginTop: 2 },
@@ -248,11 +322,14 @@ const styles = StyleSheet.create({
   countLbl: { color: colors.muted, fontSize: 10, fontWeight: '600' },
   chips: { gap: 8, paddingRight: 20 },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.pill,
-    paddingHorizontal: 14,
+    paddingHorizontal: 13,
     paddingVertical: 8,
   },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },

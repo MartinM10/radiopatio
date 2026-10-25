@@ -39,6 +39,8 @@ const sanitizeState = (list: Incident[]): Incident[] => {
   return alive.filter((i) => (seen.has(i.id) ? false : (seen.add(i.id), true))).slice(0, CACHE_CAP);
 };
 
+const getInitialSeed = (): Incident[] => (__DEV__ ? makeSeed() : []);
+
 export const IncidentsProvider = ({ children }: { children: React.ReactNode }) => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [ready, setReady] = useState(false);
@@ -69,9 +71,9 @@ export const IncidentsProvider = ({ children }: { children: React.ReactNode }) =
               `${stats.expired} caducados${stats.corrupt ? ', JSON corrupto' : ''}`,
           );
         }
-        setIncidents(raw === null ? makeSeed() : cached);
+        setIncidents(raw === null ? getInitialSeed() : cached);
       } catch {
-        setIncidents(makeSeed());
+        setIncidents(getInitialSeed());
       } finally {
         setReady(true);
         loadFromBackend();
@@ -159,7 +161,7 @@ export const IncidentsProvider = ({ children }: { children: React.ReactNode }) =
   }, []);
 
   const reset = useCallback(() => {
-    setIncidents(makeSeed());
+    setIncidents(getInitialSeed());
     loadFromBackend();
   }, [loadFromBackend]);
 

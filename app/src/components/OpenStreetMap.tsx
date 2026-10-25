@@ -14,6 +14,7 @@ import { categoryById } from '../data/categories';
 import { Incident, Zone } from '../data/types';
 import { buildHexGridForIncidents } from '../lib/hexgrid';
 import { colors, radius, severityColor } from '../theme';
+import { AppIcon } from './AppIcon';
 
 interface Props {
   incidents?: Incident[];
@@ -43,7 +44,7 @@ export const OpenStreetMap: React.FC<Props> = ({
   onFocusMap,
   userLocation = null,
 }) => {
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<any>(null);
   const [loadingGps, setLoadingGps] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [interactiveMode, setInteractiveMode] = useState(true);
@@ -147,9 +148,9 @@ export const OpenStreetMap: React.FC<Props> = ({
 
       return {
         id: inc.id,
+        category: inc.category,
         lat,
         lng,
-        emoji: cat.emoji,
         label: cat.label,
         desc: inc.description.replace(/"/g, "'"),
         color,
@@ -181,22 +182,44 @@ export const OpenStreetMap: React.FC<Props> = ({
       user-select: none;
       overflow: hidden;
     }
+    .leaflet-tile {
+      filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+    }
+    .leaflet-container {
+      background: #0B1020 !important;
+    }
+    .leaflet-control-attribution {
+      background: rgba(11, 16, 32, 0.75) !important;
+      color: #7E89AC !important;
+      font-size: 9px !important;
+    }
+    .leaflet-control-attribution a {
+      color: #CBD2EC !important;
+    }
+    .leaflet-bar a {
+      background-color: #151B30 !important;
+      color: #F4F6FF !important;
+      border-bottom: 1px solid #2A3354 !important;
+    }
+    .leaflet-bar a:hover {
+      background-color: #1E2642 !important;
+      color: #FFFFFF !important;
+    }
     .custom-pin {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
-      background: #141D35;
-      border: 3px solid #ff4757;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      font-size: 19px;
+      background: #151B30;
+      border: 2.5px solid #FF5A4F;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.6);
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .custom-pin:active, .custom-pin.selected {
-      transform: scale(1.25);
+      transform: scale(1.3);
     }
     .pick-pin {
       display: flex;
@@ -205,52 +228,58 @@ export const OpenStreetMap: React.FC<Props> = ({
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      background: #E53935;
+      background: #FF5A4F;
       border: 3px solid #FFFFFF;
-      box-shadow: 0 6px 16px rgba(229, 57, 53, 0.6);
-      font-size: 24px;
+      box-shadow: 0 0 22px rgba(255, 90, 79, 0.85);
       cursor: grab;
       animation: pulse 2s infinite;
     }
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7); }
-      70% { box-shadow: 0 0 0 14px rgba(229, 57, 53, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(255, 90, 79, 0.7); }
+      70% { box-shadow: 0 0 0 16px rgba(255, 90, 79, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 90, 79, 0); }
     }
     .leaflet-popup-content-wrapper {
-      background: #141D35;
-      color: #EAF0FF;
-      border: 1px solid #233054;
-      border-radius: 12px;
+      background: rgba(21, 27, 48, 0.96) !important;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: #F4F6FF !important;
+      border: 1px solid #2A3354;
+      border-radius: 14px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7) !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 4px;
     }
     .leaflet-popup-tip {
-      background: #141D35;
+      background: #151B30 !important;
+      border: 1px solid #2A3354;
     }
     .popup-title {
-      font-weight: 700;
+      font-weight: 800;
       font-size: 14px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      color: #F4F6FF;
     }
     .popup-desc {
       font-size: 12px;
-      color: #94A3B8;
-      line-height: 1.4;
+      color: #CBD2EC;
+      line-height: 1.45;
     }
     .hex-label {
-      background: rgba(11, 16, 32, 0.88);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
+      background: rgba(11, 16, 32, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
       color: #FFFFFF;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
       text-align: center;
       white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
   </style>
 </head>
@@ -276,12 +305,34 @@ export const OpenStreetMap: React.FC<Props> = ({
 
     window.map = map;
 
-    // Capa de mapa real OpenStreetMap
+    // Capa de mapa OpenStreetMap con filtro CSS Dark theme (sin marcas de agua ni API key)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: ['a', 'b', 'c'],
+      subdomains: 'abc',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
+
+    function getCategorySvg(catId, color) {
+      const p = 'stroke="' + color + '" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"';
+      switch(catId) {
+        case 'hogar':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5" ' + p + '/><path d="M5 9v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9" ' + p + '/></svg>';
+        case 'vehiculo':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 17h14a2 2 0 0 0 2-2v-4l-3-5H6L3 11v4a2 2 0 0 0 2 2z" ' + p + '/><circle cx="7.5" cy="17.5" r="2.5" ' + p + '/><circle cx="16.5" cy="17.5" r="2.5" ' + p + '/></svg>';
+        case 'hurto':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="13" rx="2" ' + p + '/><path d="M8 8V6a4 4 0 0 1 8 0v2" ' + p + '/></svg>';
+        case 'agresion':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7l-9-5z" ' + p + '/><line x1="12" y1="8" x2="12" y2="13" ' + p + '/></svg>';
+        case 'vandalismo':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" ' + p + '/></svg>';
+        case 'sospechoso':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" ' + p + '/><circle cx="12" cy="12" r="3" ' + p + '/></svg>';
+        case 'altercado':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 11v3a1 1 0 0 0 1 1h3l5 4V5L7 9H4a1 1 0 0 0-1 1z" ' + p + '/><path d="M16 8a5 5 0 0 1 0 8" ' + p + '/></svg>';
+        default:
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" ' + p + '/><line x1="12" y1="8" x2="12" y2="12" ' + p + '/></svg>';
+      }
+    }
 
     function sendToNative(data) {
       if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
@@ -310,7 +361,7 @@ export const OpenStreetMap: React.FC<Props> = ({
         const poly = L.polygon(h.polygon, {
           color: h.color,
           fillColor: h.color,
-          fillOpacity: h.incidentCount > 0 ? 0.26 : 0.08,
+          fillOpacity: h.incidentCount > 0 ? 0.28 : 0.08,
           weight: h.incidentCount > 0 ? 2 : 1,
           dashArray: h.incidentCount === 0 ? '3, 4' : null
         }).addTo(map);
@@ -341,15 +392,15 @@ export const OpenStreetMap: React.FC<Props> = ({
       markers.forEach(m => {
         const icon = L.divIcon({
           className: 'custom-pin-wrap',
-          html: '<div class="custom-pin" style="border-color:' + m.color + '">' + m.emoji + '</div>',
-          iconSize: [36, 36],
-          iconAnchor: [18, 18]
+          html: '<div class="custom-pin" style="border-color:' + m.color + '; box-shadow: 0 0 12px ' + m.color + '55">' + getCategorySvg(m.category, m.color) + '</div>',
+          iconSize: [38, 38],
+          iconAnchor: [19, 19]
         });
 
         const marker = L.marker([m.lat, m.lng], { icon }).addTo(map);
         
         marker.bindPopup(
-          '<div class="popup-title">' + m.emoji + ' ' + m.label + '</div>' +
+          '<div class="popup-title">' + getCategorySvg(m.category, m.color) + '<span>' + m.label + '</span></div>' +
           '<div class="popup-desc">' + m.desc + '</div>'
         );
 
@@ -369,7 +420,7 @@ export const OpenStreetMap: React.FC<Props> = ({
 
         const pickIcon = L.divIcon({
           className: 'pick-pin-wrap',
-          html: '<div class="pick-pin">📍</div>',
+          html: '<div class="pick-pin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>',
           iconSize: [44, 44],
           iconAnchor: [22, 22]
         });
@@ -541,7 +592,10 @@ export const OpenStreetMap: React.FC<Props> = ({
             {loadingGps ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.gpsBtnText}>📍 Mi ubicación (GPS)</Text>
+              <>
+                <AppIcon name="map-pin" color="#FFFFFF" size={14} />
+                <Text style={styles.gpsBtnText}>Mi ubicación (GPS)</Text>
+              </>
             )}
           </Pressable>
           <Text style={styles.hintText}>Toca y arrastra el marcador al lugar del suceso</Text>

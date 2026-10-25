@@ -1,7 +1,8 @@
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { colors } from '../theme';
 
 export type TabId = 'map' | 'feed' | 'help';
@@ -41,13 +42,32 @@ interface Props {
 
 export const TabBar = ({ active, onChange, onReport }: Props) => {
   const insets = useSafeAreaInsets();
+
+  const handleTabPress = (id: TabId) => {
+    Haptics.selectionAsync().catch(() => {});
+    onChange(id);
+  };
+
+  const handleReportPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    onReport();
+  };
+
   const tab = (id: TabId) => {
     const on = active === id;
     const color = on ? colors.text : colors.muted;
     return (
-      <Pressable key={id} style={styles.tab} onPress={() => onChange(id)}>
+      <Pressable
+        key={id}
+        style={styles.tab}
+        onPress={() => handleTabPress(id)}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: on }}
+        accessibilityLabel={`Pestaña ${labels[id]}`}
+      >
         <Icon id={id} color={color} />
         <Text style={[styles.label, { color }]}>{labels[id]}</Text>
+        <View style={[styles.dot, on && styles.dotOn]} />
       </Pressable>
     );
   };
@@ -57,10 +77,18 @@ export const TabBar = ({ active, onChange, onReport }: Props) => {
       {tab('map')}
       {tab('feed')}
       <View style={styles.fabSlot}>
-        <Pressable onPress={onReport} style={styles.fab}>
-          <Text style={styles.fabPlus}>＋</Text>
+        <Pressable
+          onPress={handleReportPress}
+          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Avisar a la comunidad (Nuevo reporte)"
+        >
+          <Svg width={24} height={24} viewBox="0 0 24 24">
+            <Line x1="12" y1="5" x2="12" y2="19" stroke="#FFFFFF" strokeWidth={2.8} strokeLinecap="round" />
+            <Line x1="5" y1="12" x2="19" y2="12" stroke="#FFFFFF" strokeWidth={2.8} strokeLinecap="round" />
+          </Svg>
         </Pressable>
-        <Text style={[styles.label, { color: colors.primary }]}>Avisar</Text>
+        <Text style={[styles.label, { color: colors.primary, marginTop: -2 }]}>Avisar</Text>
       </View>
       {tab('help')}
     </View>
@@ -78,7 +106,9 @@ const styles = StyleSheet.create({
   },
   tab: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 4 },
   label: { fontSize: 11, fontWeight: '700' },
-  fabSlot: { flex: 1, alignItems: 'center', gap: 3 },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'transparent', marginTop: 1 },
+  dotOn: { backgroundColor: colors.primary },
+  fabSlot: { flex: 1, alignItems: 'center', gap: 4 },
   fab: {
     width: 58,
     height: 58,
@@ -90,10 +120,14 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: colors.bg,
     shadowColor: colors.primary,
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
+    shadowOpacity: 0.65,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
-  fabPlus: { color: '#fff', fontSize: 28, fontWeight: '600', marginTop: -2 },
+  fabPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.94 }],
+    shadowOpacity: 0.9,
+  },
 });

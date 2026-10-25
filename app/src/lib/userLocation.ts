@@ -14,9 +14,9 @@ export interface UserLoc {
 let cached: UserLoc | null = null;
 let attempted = false;
 
-export async function getUserLocation(): Promise<UserLoc | null> {
-  if (cached) return cached;
-  if (attempted) return null; // ya se preguntó y no hay permiso/éxito
+export async function getUserLocation(force = false): Promise<UserLoc | null> {
+  if (cached && !force) return cached;
+  if (attempted && !force) return null; // ya se preguntó y no hay permiso/éxito
   attempted = true;
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();

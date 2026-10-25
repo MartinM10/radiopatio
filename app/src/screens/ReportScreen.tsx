@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppIcon } from '../components/AppIcon';
+import { CategoryIcon } from '../components/CategoryIcon';
 import { OpenStreetMap } from '../components/OpenStreetMap';
 import { categories, categoryById } from '../data/categories';
 import { areaName } from '../data/neighborhood';
@@ -61,7 +63,9 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
       {step === 1 && (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Pressable style={styles.urgent} onPress={() => Linking.openURL('tel:112').catch(() => {})}>
-            <Text style={{ fontSize: 26 }}>🚨</Text>
+            <View style={styles.urgentIconWrap}>
+              <AppIcon name="shield-alert" color={colors.primary} size={26} />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.urgentTitle}>¿Peligro ahora mismo?</Text>
               <Text style={styles.urgentText}>Llama al 112. Esta app no avisa a la policía.</Text>
@@ -71,21 +75,33 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
 
           <Text style={styles.q}>¿Qué ha ocurrido?</Text>
           <View style={styles.grid}>
-            {categories.map((c) => (
-              <Pressable
-                key={c.id}
-                onPress={() => {
-                  setCat(c.id);
-                  Haptics.selectionAsync().catch(() => {});
-                  setStep(2);
-                }}
-                style={[styles.tile, cat === c.id && { borderColor: colors.primary }]}
-              >
-                <Text style={{ fontSize: 30 }}>{c.emoji}</Text>
-                <Text style={styles.tileTitle}>{c.label}</Text>
-                <Text style={styles.tileHint}>{c.hint}</Text>
-              </Pressable>
-            ))}
+            {categories.map((c) => {
+              const isSelected = cat === c.id;
+              const col = isSelected ? colors.primary : severityColor[c.severity];
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => {
+                    setCat(c.id);
+                    Haptics.selectionAsync().catch(() => {});
+                    setStep(2);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Categoría ${c.label}`}
+                  style={({ pressed }) => [
+                    styles.tile,
+                    isSelected && { borderColor: colors.primary, backgroundColor: colors.surface },
+                    pressed && { opacity: 0.82, transform: [{ scale: 0.98 }] },
+                  ]}
+                >
+                  <View style={[styles.tileIconWrap, { backgroundColor: isSelected ? colors.primarySoft : '#0B1020' }]}>
+                    <CategoryIcon id={c.id} color={col} size={26} />
+                  </View>
+                  <Text style={styles.tileTitle}>{c.label}</Text>
+                  <Text style={styles.tileHint}>{c.hint}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         </ScrollView>
       )}
@@ -98,7 +114,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
           scrollEnabled={!mapFocused}
         >
           <View style={styles.selCat}>
-            <Text style={{ fontSize: 22 }}>{categoryById(cat).emoji}</Text>
+            <CategoryIcon id={cat} color={colors.primary} size={20} />
             <Text style={styles.selCatText}>{categoryById(cat).label}</Text>
           </View>
 
@@ -112,35 +128,62 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
             onFocusMap={setMapFocused}
           />
           {zone && (
-            <Text style={styles.zoneText}>
-              📍 {zone.address || areaName(zone)} · puedes usar GPS o situar el marcador donde ocurrió
-            </Text>
+            <View style={styles.zoneRow}>
+              <AppIcon name="map-pin" color={colors.accent} size={15} />
+              <Text style={styles.zoneText}>
+                {zone.address || areaName(zone)} · aproximada (~450m)
+              </Text>
+            </View>
           )}
 
           <Text style={styles.q}>Cuéntalo en pocas palabras</Text>
           <TextInput
             value={text}
             onChangeText={(t) => setText(t.slice(0, MAX))}
-            placeholder="Ej.: Han forzado coches en la calle…"
+            placeholder="Ej.: Han forzado varios coches en el tramo final de la calle…"
             placeholderTextColor={colors.muted}
             multiline
             style={[styles.input, problem ? { borderColor: colors.danger } : null]}
           />
           <View style={styles.inputFoot}>
-            <Text style={[styles.err, !problem && { color: colors.muted }]}>
-              {problem ?? 'Cuenta qué pasó, no quién. Sin nombres, matrículas ni teléfonos.'}
-            </Text>
-            <Text style={styles.count}>{text.length}/{MAX}</Text>
+            <View style={styles.errRow}>
+              {problem ? (
+                <AppIcon name="alert-triangle" color={colors.danger} size={14} />
+              ) : text.length > 0 && text.trim().length < MIN ? (
+                <AppIcon name="info" color={colors.warn} size={14} />
+              ) : text.trim().length >= MIN ? (
+                <AppIcon name="check" color={colors.ok} size={14} />
+              ) : null}
+              <Text style={[styles.err, !problem && { color: text.trim().length >= MIN ? colors.ok : colors.muted }]}>
+                {problem ??
+                  (text.length > 0 && text.trim().length < MIN
+                    ? `Mínimo ${MIN} caracteres (faltan ${MIN - text.trim().length})`
+                    : 'Cuenta qué pasó, no quién. Sin nombres, matrículas ni teléfonos.')}
+              </Text>
+            </View>
+            <Text style={[styles.count, text.length >= 260 && { color: colors.warn }]}>{text.length}/{MAX}</Text>
           </View>
 
           <Pressable style={styles.ackRow} onPress={() => setAck(!ack)}>
-            <View style={[styles.check, ack && styles.checkOn]}>{ack && <Text style={styles.checkMark}>✓</Text>}</View>
+            <View style={[styles.check, ack && styles.checkOn]}>
+              {ack && <AppIcon name="check" color="#fff" size={14} />}
+            </View>
             <Text style={styles.ackText}>
               Lo que cuento es cierto y no identifica a ninguna persona. Entiendo que esto no es una denuncia formal.
             </Text>
           </Pressable>
 
-          <Pressable disabled={!canSend} onPress={send} style={[styles.cta, !canSend && styles.ctaOff]}>
+          <Pressable
+            disabled={!canSend}
+            onPress={send}
+            accessibilityRole="button"
+            accessibilityLabel="Publicar aviso anónimo"
+            style={({ pressed }) => [
+              styles.cta,
+              !canSend && styles.ctaOff,
+              canSend && pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+            ]}
+          >
             <Text style={styles.ctaText}>Publicar aviso anónimo</Text>
           </Pressable>
           {!zone && <Text style={styles.needs}>Marca la zona en el mapa para continuar.</Text>}
@@ -149,16 +192,20 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
 
       {step === 3 && cat && (
         <View style={[styles.content, { alignItems: 'center', paddingTop: 30 }]}>
-          <View style={[styles.okCircle, { borderColor: severityColor[categoryById(cat).severity] }]}>
-            <Text style={{ fontSize: 44 }}>{categoryById(cat).emoji}</Text>
+          <View style={[styles.okCircle, { borderColor: colors.ok }]}>
+            <AppIcon name="shield-check" color={colors.ok} size={50} />
           </View>
           <Text style={styles.okTitle}>¡Gracias por avisar a tus vecinos!</Text>
+          <View style={styles.selCat}>
+            <CategoryIcon id={cat} color={severityColor[categoryById(cat).severity]} size={18} />
+            <Text style={styles.selCatText}>{categoryById(cat).label}</Text>
+          </View>
           <Text style={styles.okText}>
-            Tu aviso es anónimo y estará visible 72 horas. Aparecerá como «sin confirmar» hasta que otros vecinos lo confirmen.
+            Tu aviso es anónimo y estará visible 72 horas para mantener informada a la comunidad. Aparecerá como «sin confirmar» hasta que otros vecinos lo verifiquen.
           </Text>
           <View style={styles.legal}>
             <Text style={styles.legalText}>
-              Para denunciar formalmente, llama al 091 (Policía Nacional) o al 062 (Guardia Civil), o usa la sede electrónica de la Policía Nacional.
+              Para denunciar formalmente con validez judicial, contacta con Policía Nacional (091) o Guardia Civil (062).
             </Text>
           </View>
           <Pressable style={styles.cta} onPress={onClose}>
@@ -188,6 +235,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: 14,
   },
+  urgentIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#0B1020',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   urgentTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
   urgentText: { color: colors.muted, fontSize: 12, marginTop: 2 },
   urgentCall: { color: '#fff', backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, fontWeight: '800', overflow: 'hidden' },
@@ -201,12 +256,21 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.line,
     padding: 14,
-    gap: 4,
+    gap: 6,
   },
-  tileTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginTop: 4 },
+  tileIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  tileTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
   tileHint: { color: colors.muted, fontSize: 11, lineHeight: 15 },
-  selCat: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8 },
-  selCatText: { color: colors.text, fontWeight: '800' },
+  selCat: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.line },
+  selCatText: { color: colors.text, fontWeight: '800', fontSize: 13 },
+  zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   zoneText: { color: colors.accent, fontSize: 12, fontWeight: '600' },
   input: {
     minHeight: 110,
@@ -220,21 +284,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
   },
-  inputFoot: { flexDirection: 'row', gap: 10, marginTop: -6 },
+  inputFoot: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: -6 },
+  errRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   err: { flex: 1, color: colors.danger, fontSize: 12, lineHeight: 16, fontWeight: '600' },
-  count: { color: colors.muted, fontSize: 12 },
+  count: { color: colors.muted, fontSize: 12, fontWeight: '700' },
   ackRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   check: { width: 24, height: 24, borderRadius: 8, borderWidth: 2, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   checkOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkMark: { color: '#fff', fontWeight: '900', fontSize: 14 },
   ackText: { flex: 1, color: '#CBD2EC', fontSize: 13, lineHeight: 19 },
   cta: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 16, alignItems: 'center', alignSelf: 'stretch' },
   ctaOff: { opacity: 0.35 },
   ctaText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   needs: { color: colors.muted, fontSize: 12, textAlign: 'center' },
-  okCircle: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
-  okTitle: { color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center', marginTop: 10 },
-  okText: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center' },
-  legal: { backgroundColor: colors.surface, borderRadius: radius.md, padding: 14, marginVertical: 8 },
-  legalText: { color: '#CBD2EC', fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  okCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, marginBottom: 8 },
+  okTitle: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 6 },
+  okText: { color: colors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  legal: { backgroundColor: colors.surface, borderRadius: radius.md, padding: 14, marginVertical: 6, borderWidth: 1, borderColor: colors.line },
+  legalText: { color: '#CBD2EC', fontSize: 12, lineHeight: 18, textAlign: 'center' },
 });

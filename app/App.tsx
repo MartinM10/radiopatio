@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { OnboardingModal } from './src/components/OnboardingModal';
 import { TabBar, TabId } from './src/components/TabBar';
 import { FeedScreen } from './src/screens/FeedScreen';
 import { HelpScreen } from './src/screens/HelpScreen';
@@ -13,6 +14,7 @@ import { colors } from './src/theme';
 export default function App() {
   const [tab, setTab] = useState<TabId>('map');
   const [reporting, setReporting] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   return (
     <SafeAreaProvider>
@@ -22,7 +24,7 @@ export default function App() {
           <View style={{ flex: 1 }}>
             {tab === 'map' && <HomeScreen />}
             {tab === 'feed' && <FeedScreen />}
-            {tab === 'help' && <HelpScreen />}
+            {tab === 'help' && <HelpScreen onOpenOnboarding={() => setShowOnboarding(true)} />}
           </View>
           <TabBar active={tab} onChange={setTab} onReport={() => setReporting(true)} />
         </SafeAreaView>
@@ -30,6 +32,11 @@ export default function App() {
         <Modal visible={reporting} animationType="slide" onRequestClose={() => setReporting(false)}>
           <ReportScreen onClose={() => setReporting(false)} />
         </Modal>
+
+        <OnboardingModal
+          forceShow={showOnboarding}
+          onDismiss={() => setShowOnboarding(false)}
+        />
       </IncidentsProvider>
     </SafeAreaProvider>
   );
