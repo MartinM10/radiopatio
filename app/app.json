@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0B1020",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B1020"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.radiopatio",
@@ -36,6 +31,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6a895840-8ad3-4437-b41c-a96dc49d1023"
+      }
     }
   }
 }
