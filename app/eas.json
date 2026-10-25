@@ -13,7 +13,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://cambiar-por-la-url-de-produccion.es"
+        "EXPO_PUBLIC_API_URL": "https://api.radiopatio.app"
       },
       "description": "APK firmada para instalar directo (piloto interno): enlace descargable en expo.dev"
     },
@@ -22,7 +22,7 @@
         "buildType": "aab"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://cambiar-por-la-url-de-produccion.es"
+        "EXPO_PUBLIC_API_URL": "https://api.radiopatio.app"
       }
     }
   },

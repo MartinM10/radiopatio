@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Alerta Vecinal",
-    "slug": "alerta-vecinal",
+    "name": "Radio Patio",
+    "slug": "radio-patio",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,13 +14,13 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.alertavecinal",
+      "bundleIdentifier": "app.radiopatio",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Tu ubicación se usa solo para centrar el mapa y ayudarte a situar el aviso."
       }
     },
     "android": {
-      "package": "app.alertavecinal",
+      "package": "app.radiopatio",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0B1020",
