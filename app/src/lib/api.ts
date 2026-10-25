@@ -4,8 +4,9 @@ import { CategoryId, Incident, Zone } from '../data/types';
 const DEVICE_TOKEN_KEY = 'av.device_token.v1';
 const DEVICE_ID_KEY = 'av.device_id.v1';
 
-// En Expo, las variables prefijadas con EXPO_PUBLIC_ están disponibles en runtime
-const DEFAULT_API_URL = 'http://localhost:3000';
+// En Expo, las variables prefijadas con EXPO_PUBLIC_ están disponibles en runtime.
+// Por defecto siempre apunta al backend oficial de producción en radiopatio.app.
+const DEFAULT_API_URL = 'https://api.radiopatio.app';
 
 /** Error de la API con información de veracidad: código, status y mensaje del servidor. */
 export class ApiError extends Error {
@@ -21,7 +22,13 @@ export class ApiError extends Error {
 }
 
 export function getApiBaseUrl(): string {
-  return process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
+  const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
+  const url = process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
+  // Blindaje absoluto: En builds de producción nunca jamás permitir localhost ni 127.0.0.1
+  if (!isDev && (url.includes('localhost') || url.includes('127.0.0.1'))) {
+    return 'https://api.radiopatio.app';
+  }
+  return url;
 }
 
 export async function getDeviceId(): Promise<string> {

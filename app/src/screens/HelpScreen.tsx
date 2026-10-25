@@ -58,16 +58,16 @@ export const HelpScreen = ({ onOpenOnboarding }: { onOpenOnboarding?: () => void
       <Text style={styles.h}>Privacidad</Text>
       <View style={styles.box}>
         <Text style={styles.ruleD}>
-          Alerta Vecinal no pide registro ni guarda tu identidad, tu posición exacta ni datos de terceros. No registra personas, antecedentes ni procesos judiciales: solo hechos y zonas aproximadas. Esta app no sustituye a la denuncia ante la Policía ni al 112.
+          Radio Patio no pide registro ni guarda tu identidad, tu posición exacta ni datos de terceros. No registra personas, antecedentes ni procesos judiciales: solo hechos y zonas aproximadas. Esta app no sustituye a la denuncia ante la Policía ni al 112.
         </Text>
       </View>
 
       <Pressable
         style={styles.privacyLink}
-        onPress={() => Linking.openURL('https://github.com/MartinM10/radio-patio/blob/main/docs/LEGAL.md').catch(() => {})}
+        onPress={() => Linking.openURL('https://radiopatio.app/privacidad.html').catch(() => {})}
       >
         <AppIcon name="lock" color={colors.accent} size={15} />
-        <Text style={styles.privacyLinkText}>Consultar Política de Privacidad y Normativa</Text>
+        <Text style={styles.privacyLinkText}>Consultar Política de Privacidad Oficial</Text>
       </Pressable>
 
       {__DEV__ && (
@@ -86,7 +86,7 @@ export const HelpScreen = ({ onOpenOnboarding }: { onOpenOnboarding?: () => void
       <Text style={styles.ver}>
         {__DEV__
           ? 'Modo desarrollo · Datos locales'
-          : 'Alerta Vecinal · v0.1.0 · Iniciativa vecinal de código abierto'}
+          : 'Radio Patio · v1.0.0 · Red comunitaria de código abierto'}
       </Text>
     </ScrollView>
   );

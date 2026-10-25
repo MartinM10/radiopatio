@@ -65,7 +65,7 @@ export const OnboardingModal: React.FC<Props> = ({
               </View>
             </View>
 
-            <Text style={styles.title}>Bienvenido a Alerta Vecinal</Text>
+            <Text style={styles.title}>Bienvenido a Radio Patio</Text>
             <Text style={styles.subtitle}>
               Información de seguridad comunitaria en tiempo real para proteger tu barrio.
             </Text>
