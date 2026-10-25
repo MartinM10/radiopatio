@@ -125,14 +125,14 @@ El proyecto ya está preconfigurado en [app/eas.json](file:///c:/Users/marti/Dow
 En tu terminal:
 ```bash
 cd c:\Users\marti\Downloads\radio-patio\app
-npx eas login
-npx eas build -p android --profile preview
+npx eas-cli login
+npx eas-cli build -p android --profile preview
 ```
 *EAS compilará en la nube y te dará un enlace directo para descargar e instalar el archivo `.apk` en tu Android en 5 minutos.*
 
 ### Opción 2: Generar el archivo `.aab` para subir a Google Play Console
 ```bash
 cd c:\Users\marti\Downloads\radio-patio\app
-npx eas build -p android --profile production
+npx eas-cli build -p android --profile production
 ```
 *Esto generará el paquete oficial `.aab` listo para arrastrar y soltar en Google Play Console.*
