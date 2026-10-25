@@ -19,6 +19,7 @@ services:
   server:
     build: ./server
     restart: unless-stopped
+    command: npm run dev
     ports:
       - "3000:3000"
     environment:
@@ -40,6 +41,7 @@ services:
 
   app:
     build: ./app
+    command: npx expo start --lan --web
     ports:
       - "8081:8081"     # Metro bundler
       - "19000:19000"
@@ -47,6 +49,7 @@ services:
     environment:
       - EXPO_NO_TELEMETRY=1
       - CI=false
+      - BROWSER=none
       - REACT_NATIVE_PACKAGER_HOSTNAME=${HOST_IP:-127.0.0.1}
       - EXPO_PUBLIC_API_URL=http://${HOST_IP:-127.0.0.1}:3000
     depends_on:

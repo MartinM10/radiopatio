@@ -60,8 +60,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      default: {}
+      edge:
+        aliases:
+          - alerta-server
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -72,6 +77,8 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     <<: *common
+    profiles:
+      - standalone
     ports:
       - "${HTTP_BIND:-0.0.0.0:80}:80"
       - "${HTTPS_BIND:-0.0.0.0:443}:443"
@@ -126,4 +133,8 @@ volumes:
   caddy_config:
   backups:
 
-# Red por defecto del proyecto: aislada de otras stacks del host (Myrmo).
+networks:
+  default:
+  edge:
+    external: true
+    name: ${EDGE_NETWORK:-ops-proxy_default}

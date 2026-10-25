@@ -8,3 +8,4 @@ deploy/.env.*
 
 # Entorno local (IP de tu PC, etc.). Copia .env.example a .env
 .env
+expo-qr.png

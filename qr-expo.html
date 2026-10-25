@@ -4,27 +4,31 @@
 <meta charset="utf-8" />
 <title>Alerta Vecinal — abrir en Expo Go</title>
 <style>
-  body { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; background:#0b1020; color:#cbd2ec; display:flex; flex-direction:column; align-items:center; gap:14px; padding:40px; }
-  h1 { font-size:20px; margin:0; }
-  #qr { background:#fff; padding:16px; border-radius:16px; }
-  .url { font-family: Consolas, monospace; background:#161d3a; padding:10px 16px; border-radius:10px; }
-  .hint { max-width:520px; text-align:center; font-size:13px; line-height:19px; color:#8b93b8; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; background:#0b1020; color:#cbd2ec; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:90vh; gap:16px; padding:20px; text-align:center; }
+  h1 { font-size:22px; margin:0; color:#F4F6FF; }
+  .qr-box { background:#fff; padding:18px; border-radius:20px; box-shadow:0 12px 35px rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; }
+  .qr-box img { width:280px; height:280px; display:block; }
+  .url { font-family: Consolas, monospace; background:#161d3a; color:#2DD4BF; font-weight:600; font-size:16px; padding:10px 20px; border-radius:10px; border:1px solid #2A3354; }
+  .hint { max-width:480px; font-size:13px; line-height:20px; color:#8b93b8; }
+  .hint b { color:#F4F6FF; }
+  code { color: #FF5A4F; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
-  <h1>Alerta Vecinal — escanea con Expo Go</h1>
-  <div id="qr"></div>
-  <div class="url" id="url">exp://</div>
+  <h1>Alerta Vecinal — Escanea con Expo Go</h1>
+  <div class="qr-box">
+    <img id="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=exp%3A%2F%2F127.0.0.1%3A8081" alt="Código QR para Expo Go" />
+  </div>
+  <div class="url" id="url-text">exp://127.0.0.1:8081</div>
   <div class="hint">
-    Móvil y PC en la <b>misma wifi</b>. En Expo Go también puedes escribir la URL a mano
-    («Enter URL manually»). Si no conecta, abre en el firewall de Windows los puertos
-    8081, 3000 y 19000-19001 para redes privadas.
+    1. Asegúrate de que tu móvil y tu ordenador estén en la <b>misma red Wi-Fi</b>.<br />
+    2. Abre la app <b>Expo Go</b> en tu móvil y pulsa <b>"Scan QR code"</b>.<br />
+    3. También puedes pulsar en <b>"Enter URL manually"</b> e introducir la URL mostrada arriba.
   </div>
   <script>
-    const url = new URLSearchParams(location.search).get('url') || 'exp://IP-DE-TU-PC:8081';
-    document.getElementById('url').textContent = url;
-    new QRCode(document.getElementById('qr'), { text: url, width: 320, height: 320, correctLevel: 1 });
+    const url = new URLSearchParams(location.search).get('url') || ('exp://' + (location.hostname && location.hostname !== '' ? location.hostname : '127.0.0.1') + ':8081');
+    document.getElementById('url-text').textContent = url;
+    document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(url);
   </script>
 </body>
 </html>
