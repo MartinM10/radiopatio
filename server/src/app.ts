@@ -56,7 +56,7 @@ export function buildApp(): FastifyInstance {
   app.register(cors, {
     origin: config.corsOrigin === '*' ? true : config.corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Id', 'X-Admin-Token'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Id', 'X-Device-Token', 'X-Admin-Token'],
   });
 
   // Rutas
