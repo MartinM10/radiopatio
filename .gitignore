@@ -11,3 +11,6 @@ deploy/.env.*
 expo-qr.png
 *.aab
 *.apk
+
+# Documentación interna / privada
+docs/GOOGLE_PLAY_KIT.md
