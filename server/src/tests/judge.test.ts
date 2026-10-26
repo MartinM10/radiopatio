@@ -10,6 +10,10 @@ test.before(async () => {
   await runMigrations();
 });
 
+test.after(async () => {
+  await pool.end();
+});
+
 const BASE_LAT = 36.75013;
 const BASE_LNG = -4.51007;
 

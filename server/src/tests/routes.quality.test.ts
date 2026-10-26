@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import test, { TestContext } from 'node:test';
 import { buildApp } from '../app';
 import { pool } from '../db';
+import { runMigrations } from '../db/migrate';
 import { snapToHexGrid } from '../lib/geo';
 import { config } from '../config';
 
@@ -19,6 +20,18 @@ async function dbAvailable(): Promise<boolean> {
     return false;
   }
 }
+
+test.before(async () => {
+  if (await dbAvailable()) {
+    await runMigrations();
+  }
+});
+
+test.after(async () => {
+  if (await dbAvailable()) {
+    await pool.end();
+  }
+});
 
 async function post(app: any, deviceId: string, payload: unknown) {
   return app.inject({

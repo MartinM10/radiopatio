@@ -1,6 +1,11 @@
 import assert from 'node:assert';
 import test from 'node:test';
 import { buildApp } from '../app';
+import { pool } from '../db';
+
+test.after(async () => {
+  await pool.end();
+});
 
 test('Fastify app starts and responds to /api/categories', async () => {
   const app = buildApp();

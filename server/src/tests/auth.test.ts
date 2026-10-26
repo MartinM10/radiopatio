@@ -2,6 +2,15 @@ import assert from 'node:assert';
 import test from 'node:test';
 import { buildApp } from '../app';
 import { pool } from '../db';
+import { runMigrations } from '../db/migrate';
+
+test.before(async () => {
+  await runMigrations();
+});
+
+test.after(async () => {
+  await pool.end();
+});
 
 test('POST /api/devices/register emite un token de un solo uso', async () => {
   const app = buildApp();
