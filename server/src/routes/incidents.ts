@@ -26,6 +26,12 @@ const categoryEnum = z.enum([
   'vandalismo',
   'sospechoso',
   'altercado',
+  'corte_agua',
+  'corte_luz',
+  'alumbrado',
+  'calzada',
+  'limpieza',
+  'perdido',
   'otro',
 ]);
 

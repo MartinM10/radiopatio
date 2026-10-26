@@ -95,6 +95,63 @@ export const CategoryIcon: React.FC<Props> = ({
         </>
       )}
 
+      {/* Corte de agua */}
+      {id === 'corte_agua' && (
+        <>
+          <Path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" {...p} />
+          <Path d="M9 13.5c1 1.5 2 2 3 2s2-.5 3-2" {...p} />
+        </>
+      )}
+
+      {/* Corte de luz */}
+      {id === 'corte_luz' && (
+        <>
+          <Polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" {...p} />
+        </>
+      )}
+
+      {/* Farola / Alumbrado */}
+      {id === 'alumbrado' && (
+        <>
+          <Path d="M9 18h6" {...p} />
+          <Path d="M10 22h4" {...p} />
+          <Path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" {...p} />
+          <Line x1="12" y1="6" x2="12" y2="10" {...p} />
+        </>
+      )}
+
+      {/* Asfalto / Calzada */}
+      {id === 'calzada' && (
+        <>
+          <Path d="M4 21L9.5 4h5L20 21" {...p} />
+          <Line x1="2" y1="21" x2="22" y2="21" {...p} />
+          <Line x1="7" y1="14" x2="17" y2="14" {...p} />
+          <Line x1="8.5" y1="9" x2="15.5" y2="9" {...p} />
+        </>
+      )}
+
+      {/* Limpieza / Residuos */}
+      {id === 'limpieza' && (
+        <>
+          <Path d="M3 6h18" {...p} />
+          <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" {...p} />
+          <Path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" {...p} />
+          <Line x1="10" y1="11" x2="10" y2="17" {...p} />
+          <Line x1="14" y1="11" x2="14" y2="17" {...p} />
+        </>
+      )}
+
+      {/* Objeto / Mascota perdida */}
+      {id === 'perdido' && (
+        <>
+          <Circle cx="12" cy="14" r="4.5" {...p} />
+          <Circle cx="7" cy="9.5" r="2" fill={color} />
+          <Circle cx="17" cy="9.5" r="2" fill={color} />
+          <Circle cx="10" cy="5.5" r="1.8" fill={color} />
+          <Circle cx="14" cy="5.5" r="1.8" fill={color} />
+        </>
+      )}
+
       {/* Otro */}
       {id === 'otro' && (
         <>

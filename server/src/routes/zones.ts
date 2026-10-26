@@ -54,6 +54,12 @@ export async function zoneRoutes(app: FastifyInstance) {
       vandalismo: 1,
       sospechoso: 1,
       altercado: 1,
+      corte_agua: 1,
+      corte_luz: 1,
+      alumbrado: 1,
+      calzada: 1,
+      limpieza: 1,
+      perdido: 1,
       otro: 1,
     };
     // El score público solo cuenta lo verificado: un aviso sin confirmar

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -29,11 +29,17 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
   const insets = useSafeAreaInsets();
   const { incidents, addIncident } = useIncidents();
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [activeTab, setActiveTab] = useState<'all' | 'seguridad' | 'servicios'>('all');
   const [cat, setCat] = useState<CategoryId | null>(null);
   const [zone, setZone] = useState<Zone | null>(null);
   const [text, setText] = useState('');
   const [ack, setAck] = useState(false);
   const [mapFocused, setMapFocused] = useState(false);
+
+  const displayedCategories = useMemo(() => {
+    if (activeTab === 'all') return categories;
+    return categories.filter((c) => (c.group ?? 'general') === activeTab || (activeTab === 'servicios' && c.group === 'general'));
+  }, [activeTab]);
 
   const problem = text.length >= 3 ? checkText(text) : null;
   const canSend = !!cat && !!zone && text.trim().length >= MIN && !problem && ack;
@@ -74,8 +80,45 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
           </Pressable>
 
           <Text style={styles.q}>¿Qué ha ocurrido?</Text>
+
+          <View style={styles.groupFilterRow}>
+            <Pressable
+              onPress={() => {
+                setActiveTab('all');
+                Haptics.selectionAsync().catch(() => {});
+              }}
+              style={[styles.groupFilterPill, activeTab === 'all' && styles.groupFilterPillActive]}
+            >
+              <Text style={[styles.groupFilterText, activeTab === 'all' && styles.groupFilterTextActive]}>
+                Todos ({categories.length})
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setActiveTab('seguridad');
+                Haptics.selectionAsync().catch(() => {});
+              }}
+              style={[styles.groupFilterPill, activeTab === 'seguridad' && styles.groupFilterPillActive]}
+            >
+              <Text style={[styles.groupFilterText, activeTab === 'seguridad' && styles.groupFilterTextActive]}>
+                🛡️ Seguridad (7)
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setActiveTab('servicios');
+                Haptics.selectionAsync().catch(() => {});
+              }}
+              style={[styles.groupFilterPill, activeTab === 'servicios' && styles.groupFilterPillActive]}
+            >
+              <Text style={[styles.groupFilterText, activeTab === 'servicios' && styles.groupFilterTextActive]}>
+                ⚡ Servicios y Vía (7)
+              </Text>
+            </Pressable>
+          </View>
+
           <View style={styles.grid}>
-            {categories.map((c) => {
+            {displayedCategories.map((c) => {
               const isSelected = cat === c.id;
               const col = isSelected ? colors.primary : severityColor[c.severity];
               return (
@@ -94,7 +137,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
                     pressed && { opacity: 0.82, transform: [{ scale: 0.98 }] },
                   ]}
                 >
-                  <View style={[styles.tileIconWrap, { backgroundColor: isSelected ? colors.primarySoft : '#0B1020' }]}>
+                  <View style={[styles.tileIconWrap, { backgroundColor: isSelected ? colors.primarySoft : colors.surface2 }]}>
                     <CategoryIcon id={c.id} color={col} size={26} />
                   </View>
                   <Text style={styles.tileTitle}>{c.label}</Text>
@@ -239,7 +282,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#0B1020',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -248,6 +291,28 @@ const styles = StyleSheet.create({
   urgentCall: { color: '#fff', backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, fontWeight: '800', overflow: 'hidden' },
   q: { color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 6 },
   qSub: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  groupFilterRow: { flexDirection: 'row', gap: 8, marginVertical: 4 },
+  groupFilterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  groupFilterPillActive: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
+  },
+  groupFilterText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.muted,
+  },
+  groupFilterTextActive: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: {
     width: '47.8%',
@@ -291,7 +356,7 @@ const styles = StyleSheet.create({
   ackRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   check: { width: 24, height: 24, borderRadius: 8, borderWidth: 2, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   checkOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  ackText: { flex: 1, color: '#CBD2EC', fontSize: 13, lineHeight: 19 },
+  ackText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 19 },
   cta: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 16, alignItems: 'center', alignSelf: 'stretch' },
   ctaOff: { opacity: 0.35 },
   ctaText: { color: '#fff', fontSize: 16, fontWeight: '800' },
@@ -300,5 +365,5 @@ const styles = StyleSheet.create({
   okTitle: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 6 },
   okText: { color: colors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
   legal: { backgroundColor: colors.surface, borderRadius: radius.md, padding: 14, marginVertical: 6, borderWidth: 1, borderColor: colors.line },
-  legalText: { color: '#CBD2EC', fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  legalText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
 });

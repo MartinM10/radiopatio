@@ -8,7 +8,15 @@ export type CategoryId =
   | 'vandalismo'
   | 'sospechoso'
   | 'altercado'
+  | 'corte_agua'
+  | 'corte_luz'
+  | 'alumbrado'
+  | 'calzada'
+  | 'limpieza'
+  | 'perdido'
   | 'otro';
+
+export type CategoryGroup = 'seguridad' | 'servicios' | 'general';
 
 export interface Category {
   id: CategoryId;
@@ -16,6 +24,7 @@ export interface Category {
   emoji: string;
   severity: Severity;
   hint: string;
+  group?: CategoryGroup;
 }
 
 /** Zona / Ubicación en el mapa */

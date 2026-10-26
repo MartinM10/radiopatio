@@ -175,35 +175,36 @@ export const OpenStreetMap: React.FC<Props> = ({
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #0B1020;
+      background-color: #F8FAFC;
       touch-action: none;
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
       overflow: hidden;
     }
-    .leaflet-tile {
-      filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-    }
     .leaflet-container {
-      background: #0B1020 !important;
+      background: #F8FAFC !important;
     }
     .leaflet-control-attribution {
-      background: rgba(11, 16, 32, 0.75) !important;
-      color: #7E89AC !important;
+      background: rgba(255, 255, 255, 0.88) !important;
+      color: #64748B !important;
       font-size: 9px !important;
+      backdrop-filter: blur(4px);
+      border-radius: 4px;
+      padding: 2px 6px;
     }
     .leaflet-control-attribution a {
-      color: #CBD2EC !important;
+      color: #4F46E5 !important;
     }
     .leaflet-bar a {
-      background-color: #151B30 !important;
-      color: #F4F6FF !important;
-      border-bottom: 1px solid #2A3354 !important;
+      background-color: #FFFFFF !important;
+      color: #0F172A !important;
+      border-bottom: 1px solid #E2E8F0 !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
     .leaflet-bar a:hover {
-      background-color: #1E2642 !important;
-      color: #FFFFFF !important;
+      background-color: #F1F5F9 !important;
+      color: #000000 !important;
     }
     .custom-pin {
       display: flex;
@@ -212,9 +213,9 @@ export const OpenStreetMap: React.FC<Props> = ({
       width: 38px;
       height: 38px;
       border-radius: 50%;
-      background: #151B30;
+      background: #FFFFFF;
       border: 2.5px solid #FF5A4F;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+      box-shadow: 0 3px 12px rgba(0,0,0,0.18);
       cursor: pointer;
       transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -240,19 +241,19 @@ export const OpenStreetMap: React.FC<Props> = ({
       100% { box-shadow: 0 0 0 0 rgba(255, 90, 79, 0); }
     }
     .leaflet-popup-content-wrapper {
-      background: rgba(21, 27, 48, 0.96) !important;
+      background: rgba(255, 255, 255, 0.98) !important;
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      color: #F4F6FF !important;
-      border: 1px solid #2A3354;
+      color: #0F172A !important;
+      border: 1px solid #E2E8F0;
       border-radius: 14px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7) !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       padding: 4px;
     }
     .leaflet-popup-tip {
-      background: #151B30 !important;
-      border: 1px solid #2A3354;
+      background: #FFFFFF !important;
+      border: 1px solid #E2E8F0;
     }
     .popup-title {
       font-weight: 800;
@@ -261,25 +262,25 @@ export const OpenStreetMap: React.FC<Props> = ({
       display: flex;
       align-items: center;
       gap: 8px;
-      color: #F4F6FF;
+      color: #0F172A;
     }
     .popup-desc {
       font-size: 12px;
-      color: #CBD2EC;
+      color: #475569;
       line-height: 1.45;
     }
     .hex-label {
-      background: rgba(11, 16, 32, 0.92);
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(0, 0, 0, 0.12);
       border-radius: 8px;
-      color: #FFFFFF;
+      color: #0F172A;
       font-size: 11px;
       font-weight: 800;
       padding: 3px 8px;
       text-align: center;
       white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.12);
     }
   </style>
 </head>
@@ -305,7 +306,7 @@ export const OpenStreetMap: React.FC<Props> = ({
 
     window.map = map;
 
-    // Capa de mapa OpenStreetMap con filtro CSS Dark theme (sin marcas de agua ni API key)
+    // Capa oficial de OpenStreetMap en colores naturales (sin API key, nítido y colorido)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       subdomains: 'abc',
@@ -329,6 +330,18 @@ export const OpenStreetMap: React.FC<Props> = ({
           return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" ' + p + '/><circle cx="12" cy="12" r="3" ' + p + '/></svg>';
         case 'altercado':
           return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 11v3a1 1 0 0 0 1 1h3l5 4V5L7 9H4a1 1 0 0 0-1 1z" ' + p + '/><path d="M16 8a5 5 0 0 1 0 8" ' + p + '/></svg>';
+        case 'corte_agua':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" ' + p + '/><path d="M12 9v5" ' + p + '/></svg>';
+        case 'corte_luz':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" ' + p + '/></svg>';
+        case 'alumbrado':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M9 18h6" ' + p + '/><path d="M10 22h4" ' + p + '/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" ' + p + '/></svg>';
+        case 'calzada':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 21L9.5 4h5L20 21" ' + p + '/><line x1="2" y1="21" x2="22" y2="21" ' + p + '/><line x1="7" y1="14" x2="17" y2="14" ' + p + '/></svg>';
+        case 'limpieza':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 6h18" ' + p + '/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" ' + p + '/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" ' + p + '/></svg>';
+        case 'perdido':
+          return '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="14" r="4.5" ' + p + '/><circle cx="7" cy="9.5" r="2" fill="' + color + '"/><circle cx="17" cy="9.5" r="2" fill="' + color + '"/><circle cx="10" cy="5.5" r="1.8" fill="' + color + '"/><circle cx="14" cy="5.5" r="1.8" fill="' + color + '"/></svg>';
         default:
           return '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" ' + p + '/><line x1="12" y1="8" x2="12" y2="12" ' + p + '/></svg>';
       }
@@ -610,13 +623,13 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: '#0B1020',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: colors.line,
     position: 'relative',
   },
   containerActive: {
-    borderColor: colors.accent,
+    borderColor: colors.primary,
   },
   webview: {
     flex: 1,
@@ -624,7 +637,7 @@ const styles = StyleSheet.create({
   },
   loading: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#0B1020',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -635,19 +648,24 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   modeBtn: {
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: colors.line,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   modeBtnActive: {
-    backgroundColor: '#1E293B',
-    borderColor: colors.accent,
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.primary,
   },
   modeBtnText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -662,33 +680,36 @@ const styles = StyleSheet.create({
     pointerEvents: 'box-none',
   },
   gpsBtn: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
   gpsBtnText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontWeight: '700',
     fontSize: 12,
   },
   hintText: {
     fontSize: 10,
-    color: '#CBD5E1',
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    color: colors.textMuted,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
     fontWeight: '600',
+    overflow: 'hidden',
   },
 });
