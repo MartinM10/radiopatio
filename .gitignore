@@ -14,3 +14,6 @@ expo-qr.png
 
 # Documentación interna / privada
 docs/GOOGLE_PLAY_KIT.md
+
+# Activos gráficos generados para Google Play
+app/assets/google-play-*
