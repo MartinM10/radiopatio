@@ -7,6 +7,59 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.2.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.1.2...radiopatio-v1.2.0) (2026-10-26)
+
+
+### ✨ Funcionalidades
+
+* **app:** add light theme support and configure local development environment ([829b2e6](https://github.com/MartinM10/radiopatio/commit/829b2e6b0fb1c4d23eb6770ce90f4409d451f3bb))
+* **app:** elevate UI/UX to 9.5 with SVG icons, search, and onboarding ([2885cea](https://github.com/MartinM10/radiopatio/commit/2885cea6795c60292ba938cc592c312a3543deb1))
+* **app:** upgrade to Expo SDK 58 and configure Android release metadata ([0a2c75d](https://github.com/MartinM10/radiopatio/commit/0a2c75ddf0c1eb9260ca0ad97787d1abe60fe6ca))
+* **branding:** configure Radio Patio domain, landing page, and privacy policy ([a1e75f8](https://github.com/MartinM10/radiopatio/commit/a1e75f82f993fbb3f323fd5b767f56c9de719399))
+* **branding:** implement high-contrast Radar Pin logo, favicons, and app icons ([5ff5d2a](https://github.com/MartinM10/radiopatio/commit/5ff5d2af8f2766683a1e2b0866edb87b5b1fd43c))
+* **branding:** implement official Radio Patio logo, app icons, and favicons ([458e013](https://github.com/MartinM10/radiopatio/commit/458e0136710b18fa789b4358be38c38250a5fd0b))
+* **categories:** add urban and public service categories with categorized report UI ([c55552b](https://github.com/MartinM10/radiopatio/commit/c55552b088645536bebd58886dbe25082a04bf0c))
+* **changelog:** automate CHANGELOG.md generation from conventional commits ([9ea3c2d](https://github.com/MartinM10/radiopatio/commit/9ea3c2d8dcf19e18933048586c8ce4f0c411a30e))
+* **landing:** add scroll-reveal animations, interactive mockup filters, and FAQ accordion ([057e6cf](https://github.com/MartinM10/radiopatio/commit/057e6cf3e434ccf6e9d5ae3f9090a4047e3e1e25))
+* **server:** harden admin auth with timingSafeEqual and update CORS headers ([d2efeef](https://github.com/MartinM10/radiopatio/commit/d2efeefb797e00f105f4d4a28219dba982d2dc99))
+
+
+### 🐛 Correcciones
+
+* **app:** configure expo-splash-screen with dark Radar Pin branding ([d1cbb31](https://github.com/MartinM10/radiopatio/commit/d1cbb31149feae4d50a2cade7efcd86381d31411))
+* **app:** harden API base URL against localhost in production and update branding links ([a6989ed](https://github.com/MartinM10/radiopatio/commit/a6989ed668fdb6527c41ff5524edf487bbfa0ff4))
+* **build:** correct eas.json schema with app-bundle buildType and remove invalid description ([ccd19e1](https://github.com/MartinM10/radiopatio/commit/ccd19e1bb43b84283313ba9f3f990f71f07db462))
+* **ci:** ensure db migrations run and close pool in server test suites ([25eb2ef](https://github.com/MartinM10/radiopatio/commit/25eb2ef651df45dc296c2ffcf5a4ff1f952a7a8e))
+* **landing:** improve light mode contrast across mockups, comparison table, and tags ([5ab1b65](https://github.com/MartinM10/radiopatio/commit/5ab1b65839b9b344c7e105c1986ea08b89d1d28c))
+
+
+### 📝 Documentación
+
+* add CHANGELOG.md following Keep a Changelog standard ([75d2ce5](https://github.com/MartinM10/radiopatio/commit/75d2ce5fca7fa657fa594bda4baca846f5b021fe))
+* add Google Play Console publishing kit with data safety and store listing metadata ([427b123](https://github.com/MartinM10/radiopatio/commit/427b1234b579329f9fd3f3daa384a1773fd3b5b6))
+
+
+### 📦 Compilación y EAS
+
+* **app:** add eas-cli to package.json and update build docs ([a91035f](https://github.com/MartinM10/radiopatio/commit/a91035f8854540f20e283775411e50ebd783ffbd))
+* **eas:** set appVersionSource to local ([dd2b4f2](https://github.com/MartinM10/radiopatio/commit/dd2b4f243d21f6959dc7e2d9533cde6535cc76ee))
+
+
+### 🚀 Integración Continua
+
+* configure release-please for automated semver releases and changelog ([110b01f](https://github.com/MartinM10/radiopatio/commit/110b01fb1e43e8a2572a55e686f428544807c3d6))
+
+
+### 🔧 Mantenimiento
+
+* **deploy:** support reverse proxy network and update compose configurations ([6b0cd7e](https://github.com/MartinM10/radiopatio/commit/6b0cd7e71bf61b225e194455dbcb39308b5b476d))
+* **docs:** keep GOOGLE_PLAY_KIT private and add to gitignore ([90e1002](https://github.com/MartinM10/radiopatio/commit/90e1002ea38e97084882ca5c03357be0099868a3))
+* **doctor:** pass 20/20 expo doctor checks by removing deprecated splash and eas-cli ([f1eae5b](https://github.com/MartinM10/radiopatio/commit/f1eae5b534c379c2adeaea137ab91c4fed2b54a2))
+* ignore aab and apk build binaries in git ([b8ea146](https://github.com/MartinM10/radiopatio/commit/b8ea1466e1220fed710774cb9149225a6e409f45))
+* **release:** bump app version to 1.0.0 for initial store release ([f9087df](https://github.com/MartinM10/radiopatio/commit/f9087dfb4c44c27476858f18f569f17dfff0e75f))
+* **release:** bump app version to 1.1.0 (versionCode 2) ([f6d4fd9](https://github.com/MartinM10/radiopatio/commit/f6d4fd93332577295db3dfb0c3cdd759806a87ce))
+* **release:** bump versionCode to 3 for brand icon update ([14576f6](https://github.com/MartinM10/radiopatio/commit/14576f63043ba1a4efce4a59ea4b0d54956aefef))
+
 ## [1.1.2] - 2026-10-26
 
 ### Mejorado
