@@ -8,7 +8,9 @@
   <meta name="theme-color" content="#070A13">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366F1'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z'/></svg>">
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/radio-patio-logo.png">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -440,30 +442,24 @@
     }
 
     .brand-icon {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #6366F1, #8B5CF6);
+      background: #0B1020;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 20px var(--primary-glow);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
       position: relative;
+      overflow: hidden;
     }
 
-    .brand-icon::after {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.4), transparent);
-      z-index: -1;
-    }
-
-    .brand-icon svg {
-      width: 22px;
-      height: 22px;
-      fill: #FFFFFF;
+    .brand-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     .nav-links {
@@ -1331,7 +1327,7 @@
     <div class="container nav-inner">
       <a href="/" class="brand">
         <div class="brand-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+          <img src="assets/radio-patio-logo.png" alt="Radio Patio Logo" width="40" height="40">
         </div>
         <span>Radio Patio</span>
       </a>

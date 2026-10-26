@@ -20,6 +20,10 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
   - 📍 `otro`: Otras incidencias de interés vecinal.
 - **Selector de grupos en modal de reporte**: Pestañas organizadas (`Todos (14)`, `🛡️ Seguridad (7)`, `⚡ Servicios y Vía (7)`) para agilizar el aviso.
 - **Iconografía SVG dedicada**: Nuevos iconos vectoriales nítidos para todas las categorías urbanas en app, selector y marcadores del mapa.
+- **Identidad Visual Oficial de Radio Patio**:
+  - Nuevo logotipo e icono oficial: hexágono comunitario con torre de transmisión vecinal y ondas de radio de neón concéntricas.
+  - Iconos adaptativos completos para Android (`android-icon-foreground.png`, `android-icon-background.png` y `android-icon-monochrome.png`).
+  - Nuevos favicons web (32×32 y 48×48) y actualización del logo en la barra de navegación de la landing page y páginas legales.
 - **Soporte de tema claro en la app móvil**: Paleta equilibrada en modo claro (`#F8FAFC`, `#FFFFFF`, `#0F172A`) con marcadores de mapa de alto contraste.
 
 ### Corregido
