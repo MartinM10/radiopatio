@@ -34,10 +34,272 @@
       --text-main: #F8FAFC;
       --text-muted: #94A3B8;
       --text-dim: #64748B;
+      --nav-bg: rgba(7, 10, 19, 0.75);
+      --nav-bg-scrolled: rgba(7, 10, 19, 0.92);
+      --card-elevated: rgba(15, 23, 42, 0.5);
+      --canvas-bg: #060913;
+      --canvas-border: rgba(255, 255, 255, 0.05);
       --font-heading: 'Plus Jakarta Sans', sans-serif;
       --font-body: 'Inter', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
+
+    [data-theme="light"] {
+      --bg-dark: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-card: rgba(255, 255, 255, 0.88);
+      --bg-card-hover: rgba(241, 245, 249, 0.95);
+      --border: rgba(15, 23, 42, 0.09);
+      --border-focus: rgba(79, 70, 229, 0.45);
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --primary-glow: rgba(79, 70, 229, 0.25);
+      --secondary: #7C3AED;
+      --emerald: #059669;
+      --emerald-glow: rgba(5, 150, 105, 0.2);
+      --amber: #D97706;
+      --rose: #E11D48;
+      --text-main: #0F172A;
+      --text-muted: #475569;
+      --text-dim: #64748B;
+      --nav-bg: rgba(248, 250, 252, 0.82);
+      --nav-bg-scrolled: rgba(255, 255, 255, 0.95);
+      --card-elevated: rgba(255, 255, 255, 0.85);
+      --canvas-bg: #F1F5F9;
+      --canvas-border: rgba(15, 23, 42, 0.08);
+    }
+
+    [data-theme="light"] .gradient-text {
+      background: linear-gradient(135deg, #0F172A 20%, #312E81 60%, #4F46E5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    [data-theme="light"] .gradient-accent {
+      background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #059669 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    [data-theme="light"] .ambient-orb {
+      opacity: 0.12;
+    }
+
+    [data-theme="light"] .grid-overlay {
+      background-image: 
+        linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+    }
+
+    [data-theme="light"] .btn-outline {
+      background: rgba(15, 23, 42, 0.04);
+      color: var(--text-main);
+      border-color: var(--border);
+    }
+
+    [data-theme="light"] .btn-outline:hover {
+      background: rgba(15, 23, 42, 0.08);
+      border-color: rgba(15, 23, 42, 0.2);
+    }
+
+    [data-theme="light"] .badge-pill {
+      background: rgba(79, 70, 229, 0.08);
+      border-color: rgba(79, 70, 229, 0.25);
+      color: #4338CA;
+    }
+
+    [data-theme="light"] .metric-val {
+      color: var(--text-main);
+    }
+
+    [data-theme="light"] .comp-col.featured {
+      background: #FFFFFF !important;
+      border: 2px solid var(--primary);
+      box-shadow: 0 16px 40px -10px rgba(79, 70, 229, 0.16) !important;
+    }
+
+    [data-theme="light"] .featured-title {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .featured-subtitle {
+      color: var(--primary) !important;
+      font-weight: 600;
+    }
+
+    [data-theme="light"] .comp-col.featured .comp-item span {
+      color: #334155;
+    }
+
+    [data-theme="light"] .comp-col.featured .comp-item span strong {
+      color: #0F172A;
+    }
+
+    [data-theme="light"] .mockup-frame {
+      background: #FFFFFF !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04) !important;
+    }
+
+    [data-theme="light"] .mockup-cell-title {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .mockup-filters {
+      background: rgba(15, 23, 42, 0.06);
+      border: 1px solid var(--border);
+    }
+
+    [data-theme="light"] .filter-btn {
+      color: var(--text-muted);
+    }
+
+    [data-theme="light"] .filter-btn.active {
+      background: var(--primary);
+      color: #FFFFFF;
+      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.35);
+    }
+
+    [data-theme="light"] .feed-card {
+      background: #FFFFFF !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    [data-theme="light"] .feed-card:hover {
+      box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.1) !important;
+      border-color: var(--border-focus) !important;
+    }
+
+    [data-theme="light"] .feed-title {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .feed-desc {
+      color: #475569 !important;
+    }
+
+    [data-theme="light"] .feed-time {
+      color: #64748B !important;
+    }
+
+    [data-theme="light"] .feed-card-footer {
+      border-top: 1px solid var(--border) !important;
+    }
+
+    [data-theme="light"] .tag-luz {
+      background: rgba(245, 158, 11, 0.12) !important;
+      color: #B45309 !important;
+      border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    }
+
+    [data-theme="light"] .tag-agua {
+      background: rgba(59, 130, 246, 0.12) !important;
+      color: #1D4ED8 !important;
+      border: 1px solid rgba(59, 130, 246, 0.25) !important;
+    }
+
+    [data-theme="light"] .tag-seguridad {
+      background: rgba(244, 63, 94, 0.12) !important;
+      color: #BE123C !important;
+      border: 1px solid rgba(244, 63, 94, 0.25) !important;
+    }
+
+    [data-theme="light"] .pipeline-icon {
+      background: rgba(79, 70, 229, 0.08);
+      border-color: rgba(79, 70, 229, 0.2);
+      color: var(--primary);
+    }
+
+    [data-theme="light"] .emergency-banner {
+      background: linear-gradient(90deg, rgba(244, 63, 94, 0.08) 0%, rgba(244, 63, 94, 0.03) 100%);
+      border: 1px solid rgba(244, 63, 94, 0.25);
+    }
+
+    [data-theme="light"] .emergency-content h4 {
+      color: #9F1239;
+    }
+
+    [data-theme="light"] .emergency-content p {
+      color: #BE123C;
+    }
+
+    [data-theme="light"] footer {
+      background: #FFFFFF;
+      border-top: 1px solid var(--border);
+    }
+
+    [data-theme="light"] .footer-col h4 {
+      color: var(--text-main);
+    }
+
+    [data-theme="light"] .footer-col a {
+      color: var(--text-muted);
+    }
+
+    [data-theme="light"] .footer-col a:hover {
+      color: var(--primary);
+    }
+
+    [data-theme="light"] .faq-toggle-icon {
+      background: rgba(15, 23, 42, 0.05);
+    }
+
+    [data-theme="light"] .hex-interactive-box {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.85) 100%);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    }
+
+    [data-theme="light"] .footer-bottom {
+      border-top: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .featured-title {
+      color: #FFFFFF;
+    }
+
+    .featured-subtitle {
+      color: #A5B4FC;
+    }
+
+    .mockup-cell-title {
+      font-size: 1rem;
+      color: #FFFFFF;
+      display: block;
+    }
+
+    .theme-toggle-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .theme-toggle-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--primary);
+      transform: scale(1.06);
+    }
+
+    .theme-toggle-btn svg {
+      width: 19px;
+      height: 19px;
+      transition: transform 0.25s ease;
+    }
+
+    .theme-toggle-btn .sun-icon { display: none; }
+    .theme-toggle-btn .moon-icon { display: block; color: #A5B4FC; }
+
+    [data-theme="light"] .theme-toggle-btn .sun-icon { display: block; color: #F59E0B; }
+    [data-theme="light"] .theme-toggle-btn .moon-icon { display: none; }
 
     * {
       margin: 0;
@@ -148,15 +410,15 @@
       z-index: 100;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      background: rgba(7, 10, 19, 0.75);
+      background: var(--nav-bg);
       border-bottom: 1px solid var(--border);
       transition: all 0.3s ease;
     }
 
     nav.scrolled {
-      background: rgba(7, 10, 19, 0.92);
+      background: var(--nav-bg-scrolled);
       border-bottom-color: rgba(99, 102, 241, 0.2);
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
     }
 
     .nav-inner {
@@ -381,7 +643,7 @@
       gap: 40px;
       flex-wrap: wrap;
       padding: 24px 32px;
-      background: rgba(15, 23, 42, 0.5);
+      background: var(--card-elevated);
       backdrop-filter: blur(16px);
       border: 1px solid var(--border);
       border-radius: 20px;
@@ -840,9 +1102,9 @@
     .hex-visual-canvas {
       width: 100%;
       height: 320px;
-      background: #060913;
+      background: var(--canvas-bg);
       border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--canvas-border);
       position: relative;
       overflow: hidden;
       display: flex;
@@ -1083,6 +1345,24 @@
       </ul>
 
       <div class="nav-actions">
+        <button id="themeToggle" class="theme-toggle-btn" aria-label="Cambiar entre modo claro y oscuro" title="Cambiar tema">
+          <!-- Sol (se muestra en modo claro) -->
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <!-- Luna (se muestra en modo oscuro) -->
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
         <a href="#descarga" class="btn btn-primary" style="padding: 10px 20px; font-size: 0.9rem;">
           <span>Descargar</span>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17l9.2-9.2M17 17V8H8"/></svg>
@@ -1149,7 +1429,7 @@
               <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
             </div>
             <div>
-              <strong style="font-size: 1rem; color: #FFFFFF; display: block;">Celda Vecinal Chamberí / Ríos Rosas</strong>
+              <strong class="mockup-cell-title">Celda Vecinal Chamberí / Ríos Rosas</strong>
               <span style="font-size: 0.8rem; color: var(--emerald); font-weight: 600;">● Red sincronizada en tiempo real (WebSocket)</span>
             </div>
           </div>
@@ -1256,8 +1536,8 @@
       <!-- Col 2: Radio Patio (Featured) -->
       <div class="comp-col featured">
         <div class="featured-ribbon">La alternativa ética</div>
-        <div class="comp-title" style="color: #FFFFFF;">Radio Patio</div>
-        <div class="comp-subtitle" style="color: #A5B4FC;">100% anónimo, útil y basado en hechos</div>
+        <div class="comp-title featured-title">Radio Patio</div>
+        <div class="comp-subtitle featured-subtitle">100% anónimo, útil y basado en hechos</div>
         <ul class="comp-list">
           <li class="comp-item">
             <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1572,6 +1852,24 @@
         item.classList.add('open');
       }
     }
+
+    // Light / Dark Theme Switcher
+    (function initTheme() {
+      const savedTheme = localStorage.getItem('radio-patio-theme');
+      const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      const activeTheme = savedTheme || (prefersLight ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', activeTheme);
+
+      const btn = document.getElementById('themeToggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const current = document.documentElement.getAttribute('data-theme') || 'dark';
+          const next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('radio-patio-theme', next);
+        });
+      }
+    })();
   </script>
 
 </body>
