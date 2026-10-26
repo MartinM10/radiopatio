@@ -1,0 +1,14 @@
+{
+  "name": "radio-patio",
+  "version": "1.1.2",
+  "description": "Radio Patio / Alerta Vecinal — Red comunitaria anónima e hiperlocal",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "changelog": "node scripts/generate-changelog.mjs",
+    "changelog:preview": "node scripts/generate-changelog.mjs --dry-run",
+    "test:server": "npm --prefix server test",
+    "test:app": "npm --prefix app test"
+  },
+  "devDependencies": {}
+}
