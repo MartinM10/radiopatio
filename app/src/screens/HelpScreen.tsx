@@ -100,11 +100,11 @@ const styles = StyleSheet.create({
   numBig: { fontSize: 28, fontWeight: '900', width: 66 },
   numTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
   numDesc: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  call: { color: '#0B1020', fontWeight: '800', fontSize: 12, paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill, overflow: 'hidden' },
+  call: { color: '#FFFFFF', fontWeight: '800', fontSize: 12, paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill, overflow: 'hidden' },
   box: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 16, gap: 14 },
   rule: { gap: 3 },
   ruleT: { color: colors.text, fontWeight: '800', fontSize: 14 },
-  ruleD: { color: '#CBD2EC', fontSize: 13, lineHeight: 19 },
+  ruleD: { color: colors.textMuted, fontSize: 13, lineHeight: 19 },
   onboardingBtn: {
     flexDirection: 'row',
     alignItems: 'center',

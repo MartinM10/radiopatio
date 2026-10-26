@@ -19,7 +19,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <IncidentsProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <SafeAreaView style={styles.root} edges={['top']}>
           <View style={{ flex: 1 }}>
             {tab === 'map' && <HomeScreen />}

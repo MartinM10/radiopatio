@@ -1,16 +1,17 @@
 export const colors = {
-  bg: '#0B1020',
-  surface: '#151B30',
-  surface2: '#1E2640',
-  line: '#2A3354',
-  text: '#F4F6FF',
-  muted: '#8A93B2',
+  bg: '#F8FAFC',
+  surface: '#FFFFFF',
+  surface2: '#F1F5F9',
+  line: '#E2E8F0',
+  text: '#0F172A',
+  textMuted: '#334155',
+  muted: '#64748B',
   primary: '#FF5A4F',
-  primarySoft: 'rgba(255,90,79,0.16)',
-  accent: '#5B8CFF',
-  ok: '#34D399',
-  warn: '#FBBF24',
-  danger: '#FF5A4F',
+  primarySoft: 'rgba(255,90,79,0.12)',
+  accent: '#4F46E5',
+  ok: '#10B981',
+  warn: '#F59E0B',
+  danger: '#EF4444',
 };
 
 export const radius = { sm: 10, md: 16, lg: 24, pill: 999 };

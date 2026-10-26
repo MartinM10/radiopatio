@@ -128,7 +128,7 @@ export const OnboardingModal: React.FC<Props> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(5, 8, 16, 0.88)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'flex-end',
   },
   sheet: {
@@ -153,14 +153,14 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#0B1020',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.primary + '66',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 8,
   },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   featureCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#0B1020',
+    backgroundColor: colors.surface2,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   featureDesc: {
-    color: '#94A3B8',
+    color: colors.muted,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   disclaimerText: {
-    color: '#CBD2EC',
+    color: colors.textMuted,
     fontSize: 11,
     lineHeight: 16,
     textAlign: 'center',
