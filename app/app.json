@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "app.radiopatio",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#021536",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -36,6 +36,21 @@
       "eas": {
         "projectId": "6a895840-8ad3-4437-b41c-a96dc49d1023"
       }
-    }
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#021536",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#021536"
+          }
+        }
+      ]
+    ]
   }
 }
