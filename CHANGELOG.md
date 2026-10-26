@@ -7,6 +7,17 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.1.2] - 2026-10-26
+
+### Mejorado
+- **Rediseño de Identidad Visual — El Radar Vecinal**:
+  - Sustitución del isotipo detallado por una silueta geométrica minimalista y rotunda: Pin de mapa hiperlocal + ondas concéntricas de radio en cian eléctrico y azul cobalto sobre fondo azul noche (`#021536`).
+  - Máxima legibilidad y nitidez en escalas reducidas (16 px en favicon del navegador, 32–40 px en la barra de navegación y pantallas móviles).
+  - Regeneración completa de assets de marca: `radio-patio-logo.png`, `favicon.png`, `favicon-32.png`, `icon.png`, `android-icon-foreground.png`, `android-icon-background.png`, `android-icon-monochrome.png` y `splash-icon.png`.
+  - Incremento de `versionCode` a 4 en `app.json`.
+
+---
+
 ## [1.1.0] - 2026-10-26
 
 ### Añadido

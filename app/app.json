@@ -16,9 +16,9 @@
     },
     "android": {
       "package": "app.radiopatio",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
-        "backgroundColor": "#0B1020",
+        "backgroundColor": "#021536",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
