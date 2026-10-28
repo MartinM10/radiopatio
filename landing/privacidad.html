@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Política de Privacidad — Radio Patio</title>
-  <meta name="description" content="Política de privacidad de Radio Patio en cumplimiento del RGPD (Reglamento UE 2016/679) y la LOPDGDD. Principio de minimización radical de datos y geolocalización aproximada.">
+  <meta name="description" content="Política de privacidad de Radio Patio en cumplimiento del RGPD (Reglamento UE 2016/679) y la LOPDGDD. Verificación con Google sin guardar tu nombre ni tu email, minimización de datos y geolocalización aproximada.">
   <link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="apple-touch-icon" href="assets/radio-patio-logo.png">
@@ -184,10 +184,10 @@
 
   <div class="container content-box">
     <h1>Política de Privacidad</h1>
-    <div class="update-date">Última actualización: 25 de octubre de 2026 • En vigor en toda la Unión Europea</div>
+    <div class="update-date">Última actualización: 28 de octubre de 2026 • En vigor en toda la Unión Europea</div>
 
     <div class="highlight-card">
-      <p><strong>En resumen:</strong> Radio Patio es una red vecinal diseñada desde sus cimientos bajo el principio de <em>Privacidad por Diseño</em> (RGPD art. 25). <strong>No solicitamos tu nombre, teléfono, email ni cuentas de usuario.</strong> Tus coordenadas exactas jamás se transmiten a terceros ni a otros vecinos; el servidor las redondea de forma irreversible a una celda hexagonal de aproximadamente 450 metros.</p>
+      <p><strong>En resumen:</strong> Radio Patio está diseñada bajo el principio de <em>Privacidad por Diseño</em> (RGPD art. 25). Para ver el mapa y los avisos <strong>no necesitas cuenta</strong>. Para publicar, confirmar o denunciar avisos te pedimos iniciar sesión con Google una sola vez, solo para comprobar que eres una persona real. <strong>No guardamos tu nombre, tu email ni tu foto, y ningún vecino ni moderador ve quién publica.</strong> Los demás usuarios solo ven el centro de una celda hexagonal de ~450 m, nunca tu posición exacta.</p>
     </div>
 
     <h2>1. Responsable del Tratamiento</h2>
@@ -195,26 +195,27 @@
     <p>Correo electrónico de contacto para cuestiones de privacidad y protección de datos: <a href="mailto:privacidad@radiopatio.app">privacidad@radiopatio.app</a>.</p>
 
     <h2>2. Datos que tratamos y Principio de Minimización</h2>
-    <p>Radio Patio opera bajo una política de minimización radical de datos (RGPD art. 5.1.c):</p>
+    <p>Radio Patio opera bajo una política de minimización de datos (RGPD art. 5.1.c):</p>
     <ul>
-      <li><strong>Identificador seudónimo de dispositivo:</strong> No requerimos registro ni autenticación con terceros. Tu dispositivo móvil genera un token criptográfico local que, al comunicarse con la API, se procesa mediante una función resumen unidireccional (SHA-256) combinada con una sal secreta. Este valor no permite conocer tu identidad civil ni tus datos de contacto.</li>
-      <li><strong>Ubicación geográfica aproximada:</strong> Con tu consentimiento explícito al conceder el permiso en el dispositivo, la aplicación utiliza tu GPS únicamente para centrar el mapa y calcular en el servidor la celda hexagonal (~450 m de radio) en la que se ubica el aviso. <strong>Tus coordenadas exactas (latitud y longitud finas) se descartan y nunca son visibles ni accesibles para ningún usuario ni operador.</strong></li>
-      <li><strong>Contenido de los avisos:</strong> Categoría de la incidencia (luz, agua, obras, tráfico, objetos perdidos, etc.) y descripción textual proporcionada voluntariamente. La aplicación cuenta con filtros automáticos para impedir la inclusión de nombres propios, datos bancarios o información que permita identificar a personas físicas.</li>
+      <li><strong>Identificador seudónimo de dispositivo:</strong> la API emite a tu dispositivo un token aleatorio. En el servidor solo guardamos un resumen unidireccional (SHA-256) del token y del identificador del dispositivo, combinado con una sal secreta. No permite conocer tu identidad civil.</li>
+      <li><strong>Verificación de identidad con Google (solo para escribir):</strong> al publicar, confirmar o denunciar un aviso, la app abre el inicio de sesión de Google. Nuestro servidor recibe el token que Google emite, lo valida con Google y calcula, a partir del identificador de tu cuenta, un código irreversible (HMAC-SHA-256 con una clave secreta). <strong>Solo guardamos ese código</strong>, que sirve para que una misma cuenta no pueda manejar varios dispositivos y para limitar abusos. <strong>No guardamos tu nombre, tu email ni tu foto</strong>: el token se procesa en memoria y se descarta. Google actúa como proveedor de autenticación bajo sus propias condiciones y su política de privacidad.</li>
+      <li><strong>Ubicación:</strong> con tu permiso, la aplicación utiliza el GPS para centrar el mapa y situar el aviso. Al publicar o consultar tu zona, la app envía tus coordenadas al servidor, que calcula la celda hexagonal (~450 m). <strong>La API solo devuelve el centro de la celda, nunca tus coordenadas exactas, ni siquiera al autor del aviso.</strong> Con fines antifraude (comprobar que estás en la zona del aviso y que no cambias de ciudad de forma imposible) el servidor conserva las coordenadas recibidas durante un máximo de 72 horas y después las elimina. Ningún usuario tiene acceso a ellas.</li>
+      <li><strong>Contenido de los avisos:</strong> categoría de la incidencia y descripción textual aportada voluntariamente y, si la proporcionas, una referencia de calle. La aplicación cuenta con filtros automáticos para impedir nombres propios, datos bancarios o información que permita identificar a personas físicas.</li>
     </ul>
 
     <h2>3. Datos que NUNCA recopilamos</h2>
-    <p>Para garantizar tu tranquilidad y anonimato vecinal:</p>
     <ul>
-      <li>NO recopilamos tu nombre, apellidos, dirección postal ni portal.</li>
-      <li>NO solicitamos número de teléfono ni correo electrónico.</li>
+      <li>NO guardamos tu nombre, apellidos, email, foto ni dirección postal.</li>
+      <li>NO solicitamos tu número de teléfono.</li>
       <li>NO leemos tu agenda de contactos, fotos, cámara ni almacenamiento del teléfono.</li>
-      <li>NO utilizamos identificadores publicitarios (GAID / IDFA) ni rastreadores de terceros (trackers).</li>
+      <li>NO utilizamos identificadores publicitarios (GAID / IDFA) ni rastreadores o anuncios de terceros.</li>
+      <li>NO vendemos ni cedemos datos a empresas de publicidad ni a corredores de datos.</li>
     </ul>
 
     <h2>4. Base Jurídica del Tratamiento</h2>
     <p>El tratamiento se fundamenta en:</p>
     <ul>
-      <li><strong>Consentimiento del usuario (RGPD art. 6.1.a):</strong> Para el acceso a la ubicación geográfica del dispositivo a efectos de ubicar el mapa en tu vecindario.</li>
+      <li><strong>Consentimiento del usuario (RGPD art. 6.1.a):</strong> Para el acceso a la ubicación del dispositivo y para iniciar sesión con Google. Puedes retirarlo en cualquier momento desde los ajustes de Android o desinstalando la app.</li>
       <li><strong>Interés legítimo (RGPD art. 6.1.f):</strong> Para la prevención de abusos, ataques de denegación de servicio (DDoS), manipulación masiva de avisos mediante límites de frecuencia y moderación comunitaria.</li>
     </ul>
 
@@ -222,15 +223,17 @@
     <p>Radio Patio es un servicio enfocado en la actualidad inmediata del barrio. Por diseño:</p>
     <ul>
       <li>Los avisos e incidencias tienen un <strong>ciclo de vida máximo de 72 horas</strong>. Transcurrido dicho plazo, son eliminados automáticamente de los servidores activos.</li>
+      <li>Las coordenadas exactas recibidas y la última posición asociada a un dispositivo se eliminan automáticamente pasadas 72 horas.</li>
+      <li>El código irreversible de tu cuenta de Google y el resumen del token de tu dispositivo se conservan mientras uses la aplicación, para impedir cuentas duplicadas, hasta que los borres desde la app o nos lo solicites.</li>
       <li>Los registros de conexión técnica y límites de velocidad se conservan de forma rotativa durante un plazo máximo de 7 días con fines exclusivos de ciberseguridad y estabilidad del servicio.</li>
     </ul>
 
     <h2>6. Destinatarios y Transferencias Internacionales</h2>
-    <p>Los datos técnicos del servicio se alojan en servidores situados dentro del Espacio Económico Europeo (UE). No se realizan transferencias internacionales de datos ni se ceden datos a empresas de publicidad, corredores de datos ni plataformas comerciales.</p>
+    <p>Los datos técnicos del servicio se alojan en servidores situados dentro del Espacio Económico Europeo (UE). El único tercero que interviene es <strong>Google</strong>, como proveedor del inicio de sesión (el servidor consulta a Google para validar el token). No se ceden datos a empresas de publicidad, corredores de datos ni plataformas comerciales.</p>
 
     <h2 id="derechos">7. Derechos de los Usuarios (RGPD)</h2>
     <p>En virtud de los artículos 15 a 22 del RGPD y de la Ley Orgánica 3/2018 (LOPDGDD), tienes derecho a solicitar el acceso, rectificación o supresión de la información asociada a tu identificador de dispositivo, así como la limitación u oposición a su tratamiento.</p>
-    <p>Dado que no almacenamos nombres, emails ni teléfonos, cualquier solicitud debe acompañarse del identificador técnico emitido por tu dispositivo en la sección de configuración de la app, a fin de poder localizar el registro en la base de datos sin exigirte revelar tu identidad personal.</p>
+    <p>Como no almacenamos nombres, emails ni teléfonos, para localizar tu registro podemos pedirte que inicies sesión con la misma cuenta de Google desde la app o que nos indiques el momento aproximado de tus avisos. Puedes ejercer la <strong>supresión</strong> tú mismo en la app, en <em>Ayuda → Borrar mi identidad y mis datos</em>: se eliminan al instante tu verificación, tu token de dispositivo, tus avisos y tus confirmaciones y denuncias. Es irreversible; para volver a escribir tendrás que verificarte de nuevo. También puedes solicitarlo por correo.</p>
     <p>Para ejercer estos derechos, escribe a <a href="mailto:privacidad@radiopatio.app">privacidad@radiopatio.app</a>. Asimismo, tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).</p>
 
     <h2>8. Modificaciones de esta Política</h2>
