@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CategoryId, Incident, Zone } from '../data/types';
 
 const DEVICE_TOKEN_KEY = 'av.device_token.v1';
-const DEVICE_ID_KEY = 'av.device_id.v1';
+/** '1' si el token guardado pertenece a una identidad verificada (Google). */
+const DEVICE_VERIFIED_KEY = 'av.device_verified.v1';
 
 // En Expo, las variables prefijadas con EXPO_PUBLIC_ están disponibles en runtime.
 // Por defecto siempre apunta al backend oficial de producción en radiopatio.app.
@@ -31,19 +32,6 @@ export function getApiBaseUrl(): string {
   return url;
 }
 
-export async function getDeviceId(): Promise<string> {
-  try {
-    let id = await AsyncStorage.getItem(DEVICE_ID_KEY);
-    if (!id) {
-      id = 'dev_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
-      await AsyncStorage.setItem(DEVICE_ID_KEY, id);
-    }
-    return id;
-  } catch {
-    return 'fallback_anonymous_device';
-  }
-}
-
 export async function getDeviceToken(): Promise<string | null> {
   try {
     return await AsyncStorage.getItem(DEVICE_TOKEN_KEY);
@@ -70,7 +58,25 @@ export async function registerDeviceToken(baseUrl: string): Promise<string | nul
   }
 }
 
+/** El servidor ya no reconoce este token (base de datos nueva, sal rotada…). */
+const STALE_TOKEN_CODES = new Set(['DEVICE_TOKEN_REQUIRED', 'INVALID_DEVICE_TOKEN']);
+
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  try {
+    return await sendOnce<T>(endpoint, options);
+  } catch (err) {
+    // Las escrituras exigen un token emitido por el servidor. Si el guardado
+    // dejó de valer, se pide uno nuevo y se reintenta UNA sola vez.
+    if (err instanceof ApiError && err.status === 401 && err.code && STALE_TOKEN_CODES.has(err.code)) {
+      await AsyncStorage.multiRemove([DEVICE_TOKEN_KEY, DEVICE_VERIFIED_KEY]).catch(() => {});
+      deviceTokenRegistered = false;
+      return sendOnce<T>(endpoint, options);
+    }
+    throw err;
+  }
+}
+
+async function sendOnce<T>(endpoint: string, options: RequestInit): Promise<T> {
   const baseUrl = getApiBaseUrl();
   let token = await getDeviceToken();
   if (!token) {
@@ -82,11 +88,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     headers.set('Content-Type', 'application/json');
   }
   if (token) headers.set('X-Device-Token', token);
-  // Fallback legacy: si no hay token, usa el id local (retrocompatibilidad)
-  if (!token) {
-    const legacyId = await getDeviceId();
-    headers.set('X-Device-Id', legacyId);
-  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -155,4 +156,59 @@ export async function apiAppealIncident(id: string): Promise<{ success: boolean;
   return apiFetch<{ success: boolean; status: string }>(`/api/incidents/${id}/appeal`, {
     method: 'POST',
   });
+}
+
+/**
+ * Derecho de supresión: el servidor borra la identidad de este dispositivo y
+ * todo lo que publicó. Después se olvida el token; la próxima acción pedirá
+ * uno nuevo. Sin reintento automático: un 401 significa que ya no había nada.
+ */
+export async function apiDeleteIdentity(): Promise<void> {
+  if (await getDeviceToken()) {
+    try {
+      await sendOnce<unknown>('/api/devices/me', { method: 'DELETE' });
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) throw err;
+    }
+  }
+  await AsyncStorage.multiRemove([DEVICE_TOKEN_KEY, DEVICE_VERIFIED_KEY]).catch(() => {});
+  deviceTokenRegistered = false;
+}
+
+export async function isDeviceVerified(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(DEVICE_VERIFIED_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Canjea el id_token de Google por el token de una identidad verificada.
+ * El servidor solo guarda un HMAC del identificador de Google: ni email ni nombre.
+ */
+export async function apiGoogleLogin(idToken: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${getApiBaseUrl()}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', 'No se pudo contactar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
+  }
+  const body = (await res.json().catch(() => ({}))) as {
+    data?: { token?: string };
+    error?: string;
+    message?: string;
+  };
+  const token = body.data?.token;
+  if (!res.ok || !token) {
+    throw new ApiError(res.status, body.error, body.message ?? 'No se pudo verificar tu cuenta de Google.');
+  }
+  await AsyncStorage.multiSet([
+    [DEVICE_TOKEN_KEY, token],
+    [DEVICE_VERIFIED_KEY, '1'],
+  ]);
 }

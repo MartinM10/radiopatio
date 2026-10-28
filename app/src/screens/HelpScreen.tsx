@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '../components/AppIcon';
+import { apiDeleteIdentity, isDeviceVerified } from '../lib/api';
 import { useIncidents } from '../store';
 import { colors, radius } from '../theme';
 
@@ -15,12 +16,44 @@ const rules = [
   ['Cuenta qué pasó, no quién', 'Nunca nombres, apodos, matrículas, teléfonos ni descripciones por origen o etnia.'],
   ['Solo lo que has visto', 'No compartas rumores. Si dudas, no publiques.'],
   ['Cero justicia por tu mano', 'Avisar no es investigar ni enfrentarse. Llama al 112.'],
-  ['Todo es anónimo y temporal', 'Sin cuentas. Ubicación solo por zonas de ~450 m. Los avisos desaparecen a las 72 h.'],
+  ['Anónimo para tus vecinos y temporal', 'Nadie ve quién publica. Ubicación solo por zonas de ~450 m. Los avisos desaparecen a las 72 h.'],
 ];
 
 export const HelpScreen = ({ onOpenOnboarding }: { onOpenOnboarding?: () => void }) => {
   const { reset } = useIncidents();
   const call = (n: string) => Linking.openURL(`tel:${n}`).catch(() => {});
+  const [verified, setVerified] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    isDeviceVerified().then(setVerified);
+  }, []);
+
+  const deleteIdentity = useCallback(() => {
+    Alert.alert(
+      'Borrar mi identidad',
+      'Se eliminará tu verificación y todos los avisos, confirmaciones y denuncias que hayas hecho. No se puede deshacer. Para volver a publicar tendrás que verificarte de nuevo.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Borrar todo',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await apiDeleteIdentity();
+              setVerified(false);
+              Alert.alert('Identidad borrada', 'Hemos eliminado tu verificación y tus datos del servidor.');
+            } catch {
+              Alert.alert('No se pudo borrar', 'Comprueba tu conexión e inténtalo de nuevo.');
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -58,7 +91,7 @@ export const HelpScreen = ({ onOpenOnboarding }: { onOpenOnboarding?: () => void
       <Text style={styles.h}>Privacidad</Text>
       <View style={styles.box}>
         <Text style={styles.ruleD}>
-          Radio Patio no pide registro ni guarda tu identidad, tu posición exacta ni datos de terceros. No registra personas, antecedentes ni procesos judiciales: solo hechos y zonas aproximadas. Esta app no sustituye a la denuncia ante la Policía ni al 112.
+          Para ver el mapa no necesitas cuenta. Para publicar verificas una vez tu cuenta de Google; no guardamos tu nombre, email ni foto, y nadie ve quién publica. Tu posición exacta nunca se muestra. No registra personas, antecedentes ni procesos judiciales: solo hechos y zonas aproximadas. Esta app no sustituye a la denuncia ante la Policía ni al 112.
         </Text>
       </View>
 
@@ -69,6 +102,13 @@ export const HelpScreen = ({ onOpenOnboarding }: { onOpenOnboarding?: () => void
         <AppIcon name="lock" color={colors.accent} size={15} />
         <Text style={styles.privacyLinkText}>Consultar Política de Privacidad Oficial</Text>
       </Pressable>
+
+      {verified && (
+        <Pressable style={styles.danger} onPress={deleteIdentity} disabled={deleting} accessibilityRole="button">
+          <AppIcon name="x" color={colors.danger} size={15} />
+          <Text style={styles.dangerText}>{deleting ? 'Borrando…' : 'Borrar mi identidad y mis datos'}</Text>
+        </Pressable>
+      )}
 
       {__DEV__ && (
         <Pressable
@@ -119,6 +159,8 @@ const styles = StyleSheet.create({
   onboardingBtnText: { color: colors.text, fontWeight: '800', fontSize: 14 },
   privacyLink: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
   privacyLinkText: { color: colors.accent, fontWeight: '700', fontSize: 13 },
+  danger: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.danger + '55' },
+  dangerText: { color: colors.danger, fontWeight: '700', fontSize: 13 },
   reset: { marginTop: 10, alignItems: 'center', paddingVertical: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line },
   resetText: { color: colors.muted, fontWeight: '700' },
   ver: { color: colors.muted, fontSize: 11, textAlign: 'center', marginTop: 6 },

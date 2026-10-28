@@ -9,6 +9,7 @@ import { timeAgo } from '../lib/privacy';
 import { useIncidents } from '../store';
 import { colors, radius, severityColor, severityLabel } from '../theme';
 import { AppIcon } from './AppIcon';
+import { useIdentity } from './IdentityGate';
 import { CategoryIcon } from './CategoryIcon';
 
 interface Props {
@@ -20,6 +21,7 @@ const tap = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch((
 
 export const IncidentCard = ({ incident, compact }: Props) => {
   const { confirm, flag, isConfirmed } = useIncidents();
+  const { requireIdentity } = useIdentity();
   const cat = categoryById(incident.category);
   const sev = severityColor[cat.severity];
   const confirmed = isConfirmed(incident);
@@ -30,7 +32,8 @@ export const IncidentCard = ({ incident, compact }: Props) => {
       {
         text: 'Denunciar',
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
+          if (!(await requireIdentity())) return;
           flag(incident.id);
           tap();
         },
@@ -108,7 +111,8 @@ export const IncidentCard = ({ incident, compact }: Props) => {
             <View style={styles.actions}>
               <Pressable
                 disabled={incident.confirmedByMe}
-                onPress={() => {
+                onPress={async () => {
+                  if (!(await requireIdentity())) return;
                   confirm(incident.id);
                   tap();
                 }}

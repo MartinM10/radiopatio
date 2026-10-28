@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '../components/AppIcon';
 import { CategoryIcon } from '../components/CategoryIcon';
+import { useIdentity } from '../components/IdentityGate';
 import { OpenStreetMap } from '../components/OpenStreetMap';
 import { categories, categoryById } from '../data/categories';
 import { areaName } from '../data/neighborhood';
@@ -28,6 +29,7 @@ const MAX = 280;
 export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
   const insets = useSafeAreaInsets();
   const { incidents, addIncident } = useIncidents();
+  const { requireIdentity } = useIdentity();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [activeTab, setActiveTab] = useState<'all' | 'seguridad' | 'servicios'>('all');
   const [cat, setCat] = useState<CategoryId | null>(null);
@@ -44,8 +46,10 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
   const problem = text.length >= 3 ? checkText(text) : null;
   const canSend = !!cat && !!zone && text.trim().length >= MIN && !problem && ack;
 
-  const send = () => {
+  const send = async () => {
     if (!canSend || !cat || !zone) return;
+    // Publicar exige identidad verificada (se pide una sola vez).
+    if (!(await requireIdentity())) return;
     addIncident({ category: cat, zone, description: text });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setStep(3);

@@ -76,9 +76,9 @@ export const OnboardingModal: React.FC<Props> = ({
                 <AppIcon name="lock" color={colors.accent} size={22} />
               </View>
               <View style={styles.featureTextCol}>
-                <Text style={styles.featureTitle}>100% Anónimo y sin registro</Text>
+                <Text style={styles.featureTitle}>Anónimo para tus vecinos</Text>
                 <Text style={styles.featureDesc}>
-                  Sin correos, contraseñas ni números de teléfono. Nadie sabe quién eres ni recopilamos datos personales.
+                  Para publicar verificas una vez tu cuenta de Google, pero nadie ve quién eres y no guardamos tu nombre, email ni foto.
                 </Text>
               </View>
             </View>

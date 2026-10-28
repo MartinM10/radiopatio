@@ -13,7 +13,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.radiopatio.app"
+        "EXPO_PUBLIC_API_URL": "https://api.radiopatio.app",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "545077224643-hue02196hdeqe4g6bufm88pfj9hcs4mh.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -21,7 +22,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.radiopatio.app"
+        "EXPO_PUBLIC_API_URL": "https://api.radiopatio.app",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "545077224643-hue02196hdeqe4g6bufm88pfj9hcs4mh.apps.googleusercontent.com"
       }
     }
   },
