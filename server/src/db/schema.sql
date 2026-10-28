@@ -12,6 +12,11 @@ CREATE TABLE IF NOT EXISTS devices (
     trust_level INTEGER NOT NULL DEFAULT 0
 );
 
+-- Identidad verificada (Google/SMS): HMAC con secreto, nunca el id en claro.
+-- Un identity_hash solo puede existir en un dispositivo: una cuenta, una identidad.
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS identity_hash VARCHAR(64);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_identity ON devices(identity_hash) WHERE identity_hash IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS incidents (
     id VARCHAR(36) PRIMARY KEY,
     category VARCHAR(32) NOT NULL,

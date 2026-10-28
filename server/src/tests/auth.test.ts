@@ -1,6 +1,8 @@
 import assert from 'node:assert';
 import test from 'node:test';
 import { buildApp } from '../app';
+import { devHeaders } from './helpers';
+import { config } from '../config';
 import { pool } from '../db';
 import { runMigrations } from '../db/migrate';
 
@@ -58,6 +60,9 @@ test('POST /api/auth/google sin token → 400', async () => {
 });
 
 test('POST /api/auth/google con token inválido → 401', async () => {
+  // Con client ID configurado, el token llega a Google y Google lo rechaza.
+  const previous = config.googleClientId;
+  config.googleClientId = 'client-id-de-test.apps.googleusercontent.com';
   const app = buildApp();
   try {
     const res = await app.inject({
@@ -67,6 +72,7 @@ test('POST /api/auth/google con token inválido → 401', async () => {
     });
     assert.strictEqual(res.statusCode, 401);
   } finally {
+    config.googleClientId = previous;
     await app.close();
   }
 });
@@ -112,7 +118,7 @@ test('POST /api/incidents/:id/appeal: solo el autor puede recurrir', async () =>
     const created = await app.inject({
       method: 'POST',
       url: '/api/incidents',
-      headers: { 'x-device-id': author },
+      headers: await devHeaders(author),
       payload: {
         category: 'vandalismo',
         zone: { lat: 36.75013, lng: -4.51007 },
@@ -127,17 +133,17 @@ test('POST /api/incidents/:id/appeal: solo el autor puede recurrir', async () =>
       await app.inject({
         method: 'POST',
         url: `/api/incidents/${id}/flag`,
-        headers: { 'x-device-id': `flagger-${i}-${Math.random().toString(36).slice(2, 8)}` },
+        headers: await devHeaders(`flagger-${i}-${Math.random().toString(36).slice(2, 8)}`),
       });
     }
-    const hidden = await app.inject({ method: 'GET', url: '/api/incidents', headers: { 'x-device-id': author } });
+    const hidden = await app.inject({ method: 'GET', url: '/api/incidents', headers: await devHeaders(author) });
     assert.ok(!JSON.parse(hidden.body).data.some((i: { id: string }) => i.id === id), 'oculto');
 
     // Otro dispositivo no puede recurrir
     const forbidden = await app.inject({
       method: 'POST',
       url: `/api/incidents/${id}/appeal`,
-      headers: { 'x-device-id': other },
+      headers: await devHeaders(other),
     });
     assert.strictEqual(forbidden.statusCode, 403);
 
@@ -145,7 +151,7 @@ test('POST /api/incidents/:id/appeal: solo el autor puede recurrir', async () =>
     const appeal = await app.inject({
       method: 'POST',
       url: `/api/incidents/${id}/appeal`,
-      headers: { 'x-device-id': author },
+      headers: await devHeaders(author),
     });
     assert.strictEqual(appeal.statusCode, 200);
     assert.strictEqual(JSON.parse(appeal.body).status, 'pending');

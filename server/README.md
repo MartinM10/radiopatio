@@ -26,18 +26,26 @@ API REST construida con **Node.js**, **TypeScript**, **Fastify** y **PostgreSQL*
 ### Incidencias
 - `GET /api/incidents`: Listado de incidencias activas en las últimas 72 horas.
   - Query params opcionales: `limit`, `since`, `category`, `gx`, `gy`.
-  - Header: `X-Device-Id: <identificador-anónimo>`.
+  - Header opcional: `X-Device-Token: <token>` (solo para rellenar `mine`, `confirmedByMe`, `flaggedByMe`).
   - Devuelve lista con `confirmations`, `confirmedByMe`, `flaggedByMe`, `mine`.
 - `POST /api/incidents`: Publicar nuevo aviso.
-  - Header: `X-Device-Id: <identificador-anónimo>`.
+  - Header obligatorio: `X-Device-Token: <token>` (emitido por `POST /api/devices/register` o `POST /api/auth/google`).
   - Body: `{ "category": "hurto", "zone": { "gx": 3, "gy": 4 }, "description": "..." }`.
   - Aplica filtro de privacidad y límite de 5 avisos/hora por dispositivo.
 - `POST /api/incidents/:id/confirm`: Confirmar aviso («yo también lo vi»).
-  - Header: `X-Device-Id: <identificador-anónimo>`.
+  - Header obligatorio: `X-Device-Token: <token>`.
   - Previene confirmar avisos propios o confirmar múltiples veces.
 - `POST /api/incidents/:id/flag`: Marcar aviso como inadecuado / abuso.
-  - Header: `X-Device-Id: <identificador-anónimo>`.
+  - Header obligatorio: `X-Device-Token: <token>`.
   - Aumenta el contador de denuncias; oculta automáticamente al alcanzar el umbral de moderación.
+
+### Identidad
+Todas las escrituras (publicar, confirmar, denunciar, recurrir) exigen un token emitido por el servidor; sin él responden `401`. Ya no se acepta `X-Device-Id` ni la IP como identidad.
+- `POST /api/devices/register`: alta anónima (limitada a `REGISTER_RATE_MAX` por IP y hora).
+- `DELETE /api/devices/me`: derecho de supresión. Header `X-Device-Token`. Borra el dispositivo (token, identidad, posición) y sus avisos, confirmaciones y denuncias. Irreversible; límite 5/hora.
+- `POST /api/auth/google`: `{ "idToken": "..." }`. Requiere `GOOGLE_CLIENT_ID`; sin él responde `503`. Una cuenta de Google = un dispositivo: un nuevo login rota el token.
+- `POST /api/auth/otp/*`: `501` hasta integrar un proveedor de SMS.
+- Con `REQUIRE_VERIFIED_IDENTITY=1`, solo las cuentas verificadas pueden escribir (`403 IDENTITY_REQUIRED`).
 
 ---
 

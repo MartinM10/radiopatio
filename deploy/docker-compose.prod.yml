@@ -51,9 +51,16 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      DEVICE_SALT: ${DEVICE_SALT}
-      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en deploy/.env}@db:5432/${POSTGRES_DB}
+      # Obligatorios: sin ellos compose no arranca (y el servidor tampoco).
+      DEVICE_SALT: ${DEVICE_SALT:?define DEVICE_SALT en deploy/.env (openssl rand -hex 32)}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?define ADMIN_TOKEN en deploy/.env (openssl rand -hex 32)}
+      # El servidor solo es accesible a través del proxy (sin puertos publicados),
+      # así que es seguro confiar en X-Forwarded-For para los límites por IP.
+      TRUST_PROXY: "1"
+      REGISTER_RATE_MAX: ${REGISTER_RATE_MAX:-10}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      REQUIRE_VERIFIED_IDENTITY: ${REQUIRE_VERIFIED_IDENTITY:-0}
       CORS_ORIGIN: ${CORS_ORIGIN}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-600}
       PURGE_INTERVAL_MINUTES: ${PURGE_INTERVAL_MINUTES:-15}

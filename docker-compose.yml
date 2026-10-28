@@ -30,6 +30,8 @@ services:
       - DEVICE_SALT=radiopatio_anonymous_salt_dev
       - CORS_ORIGIN=*
       - ADMIN_TOKEN=radiopatio_admin_dev
+      # Client ID web de OAuth (público: va dentro de la app).
+      - GOOGLE_CLIENT_ID=545077224643-hue02196hdeqe4g6bufm88pfj9hcs4mh.apps.googleusercontent.com
       - PURGE_INTERVAL_MINUTES=15
       - RATE_LIMIT_MAX=600
     depends_on:

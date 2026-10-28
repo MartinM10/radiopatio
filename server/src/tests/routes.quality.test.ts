@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import test, { TestContext } from 'node:test';
 import { buildApp } from '../app';
+import { devHeaders } from './helpers';
 import { pool } from '../db';
 import { runMigrations } from '../db/migrate';
 import { snapToHexGrid } from '../lib/geo';
@@ -37,7 +38,7 @@ async function post(app: any, deviceId: string, payload: unknown) {
   return app.inject({
     method: 'POST',
     url: '/api/incidents',
-    headers: { 'x-device-id': deviceId },
+    headers: await devHeaders(deviceId),
     payload,
   });
 }
@@ -122,7 +123,7 @@ test('Privacidad de coordenadas: la lista devuelve el centro de celda, nunca el 
     const list = await app.inject({
       method: 'GET',
       url: '/api/incidents',
-      headers: { 'x-device-id': device() },
+      headers: await devHeaders(device()),
     });
     const listed = JSON.parse(list.body).data.find((i: { id: string }) => i.id === body.id);
     assert.ok(listed, 'el aviso debe estar en el listado');
@@ -160,7 +161,7 @@ test('Estadística de zona: solo confirmados mueven la aguja y hace falta muestr
       const res = await app.inject({
         method: 'POST',
         url: `/api/incidents/${id}/confirm`,
-        headers: { 'x-device-id': d },
+        headers: await devHeaders(d),
       });
       assert.strictEqual(res.statusCode, 200);
     }
@@ -191,22 +192,22 @@ test('Moderación: 2 denuncias ocultan; cola y auditoría solo con token de admi
     ids.push(id);
 
     expectStatus(
-      await app.inject({ method: 'POST', url: `/api/incidents/${id}/flag`, headers: { 'x-device-id': device() }, payload: { reason: 'me parece falso' } }),
+      await app.inject({ method: 'POST', url: `/api/incidents/${id}/flag`, headers: await devHeaders(device()), payload: { reason: 'me parece falso' } }),
       200,
     );
     // tras 1 denuncia sigue visible
-    let list = await app.inject({ method: 'GET', url: '/api/incidents', headers: { 'x-device-id': device() } });
+    let list = await app.inject({ method: 'GET', url: '/api/incidents', headers: await devHeaders(device()) });
     assert.ok(JSON.parse(list.body).data.some((i: { id: string }) => i.id === id));
     expectStatus(
-      await app.inject({ method: 'POST', url: `/api/incidents/${id}/flag`, headers: { 'x-device-id': device() } }),
+      await app.inject({ method: 'POST', url: `/api/incidents/${id}/flag`, headers: await devHeaders(device()) }),
       200,
     );
     // tras 2 (umbral config.maxFlagsBeforeHide = 3): sigue visible; con 3 se oculta
     expectStatus(
-      await app.inject({ method: 'POST', url: `/api/incidents/${id}/flag`, headers: { 'x-device-id': device() } }),
+      await app.inject({ method: 'POST', url: `/api/incidents/${id}/flag`, headers: await devHeaders(device()) }),
       200,
     );
-    list = await app.inject({ method: 'GET', url: '/api/incidents', headers: { 'x-device-id': device() } });
+    list = await app.inject({ method: 'GET', url: '/api/incidents', headers: await devHeaders(device()) });
     assert.ok(!JSON.parse(list.body).data.some((i: { id: string }) => i.id === id), 'oculto tras el umbral');
 
     const queue = await app.inject({
@@ -234,7 +235,7 @@ test('Moderación: 2 denuncias ocultan; cola y auditoría solo con token de admi
     });
     assert.strictEqual(resolve.statusCode, 200);
 
-    list = await app.inject({ method: 'GET', url: '/api/incidents', headers: { 'x-device-id': device() } });
+    list = await app.inject({ method: 'GET', url: '/api/incidents', headers: await devHeaders(device()) });
     assert.ok(JSON.parse(list.body).data.some((i: { id: string }) => i.id === id), 'restaurado');
 
     const audit = await app.inject({
@@ -262,7 +263,7 @@ test('Retención 72 h: los caducados se purgan físicamente al leer', async (t: 
     );
     await pool.query(`INSERT INTO incident_confirmations (incident_id, device_hash) VALUES ($1, 'test-old-c')`, [id]);
 
-    const list = await app.inject({ method: 'GET', url: '/api/incidents', headers: { 'x-device-id': device() } });
+    const list = await app.inject({ method: 'GET', url: '/api/incidents', headers: await devHeaders(device()) });
     assert.ok(!JSON.parse(list.body).data.some((i: { id: string }) => i.id === id));
 
     const gone = await pool.query(`SELECT 1 AS x FROM incidents WHERE id = $1`, [id]);

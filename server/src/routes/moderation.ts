@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { config } from '../config';
-import { getDeviceHash } from '../lib/device';
+import { authenticateWrite } from '../lib/device';
 import { pool } from '../db';
 import { purgeExpiredIncidents } from '../db/purge';
 
@@ -161,7 +161,10 @@ ORDER BY i.judge_score DESC NULLS LAST, i.flags_count DESC, i.created_at DESC
     '/api/incidents/:id/appeal',
     async (req, reply) => {
       const { id } = req.params;
-      const deviceHash = getDeviceHash(req);
+      // Solo el autor puede recurrir: exige su identidad real, no una cabecera.
+      const auth = await authenticateWrite(req, reply);
+      if (!auth) return reply;
+      const deviceHash = auth.deviceHash;
       const { rows } = await pool.query(
         `SELECT id, status, device_hash FROM incidents WHERE id = $1`,
         [id],

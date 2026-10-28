@@ -15,6 +15,9 @@ export function buildApp(): FastifyInstance {
     logger: {
       level: config.logLevel,
     },
+    // Detrás de Caddy, sin esto todas las peticiones comparten la IP del
+    // proxy y los límites por IP afectarían a todos a la vez.
+    trustProxy: config.trustProxy,
   });
 
   // Permitir requests con Content-Type: application/json y cuerpo vacío sin lanzar FST_ERR_CTP_EMPTY_JSON_BODY

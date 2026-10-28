@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import test from 'node:test';
 import { buildApp } from '../app';
+import { devHeaders } from './helpers';
 import { pool } from '../db';
 import { runMigrations } from '../db/migrate';
 import { snapToHexGrid } from '../lib/geo';
@@ -24,7 +25,7 @@ test('juez secundario: desactivado por defecto, no puntúa ni modifica la fila',
     const res = await app.inject({
       method: 'POST',
       url: '/api/incidents',
-      headers: { 'x-device-id': `judge-dev-${Math.random().toString(36).slice(2, 10)}` },
+      headers: await devHeaders(`judge-dev-${Math.random().toString(36).slice(2, 10)}`),
       payload: {
         category: 'vandalismo',
         zone: { lat: BASE_LAT, lng: BASE_LNG },

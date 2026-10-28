@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { config } from '../config';
 import { pool } from '../db';
 import { purgeExpiredIncidents } from '../db/purge';
-import { getDeviceHash } from '../lib/device';
+import { authenticateWrite, resolveReadHash } from '../lib/device';
 import { scheduleJudge } from '../lib/judge';
 import { snapToHexGrid } from '../lib/geo';
 import {
@@ -125,7 +125,7 @@ export async function incidentRoutes(app: FastifyInstance) {
     }
 
     const { limit, since, category, gx, gy, timeframe } = parseRes.data;
-    const deviceHash = getDeviceHash(req);
+    const deviceHash = await resolveReadHash(req);
 
     // Minimización: lo caducado se purga físicamente al leer.
     await purgeExpiredIncidents();
@@ -208,6 +208,12 @@ export async function incidentRoutes(app: FastifyInstance) {
 
   // POST /api/incidents
   app.post('/api/incidents', async (req: FastifyRequest, reply: FastifyReply) => {
+    // Identidad emitida por el servidor: sin ella, los límites por
+    // dispositivo se saltarían cambiando una cabecera.
+    const auth = await authenticateWrite(req, reply);
+    if (!auth) return reply;
+    const deviceHash = auth.deviceHash;
+
     const parseRes = createIncidentSchema.safeParse(req.body);
     if (!parseRes.success) {
       return reply.status(400).send({
@@ -226,8 +232,6 @@ export async function incidentRoutes(app: FastifyInstance) {
         message: privacyProblem,
       });
     }
-
-    const deviceHash = getDeviceHash(req);
 
     // Rate limiting por dispositivo (máx MAX_PER_HOUR avisos por hora)
     const rateCheck = await pool.query(
@@ -387,7 +391,9 @@ export async function incidentRoutes(app: FastifyInstance) {
     '/api/incidents/:id/confirm',
     async (req, reply) => {
       const { id } = req.params;
-      const deviceHash = getDeviceHash(req);
+      const auth = await authenticateWrite(req, reply);
+      if (!auth) return reply;
+      const deviceHash = auth.deviceHash;
 
       const client = await pool.connect();
       try {
@@ -474,7 +480,9 @@ export async function incidentRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const { id } = req.params;
       const { reason } = req.body || {};
-      const deviceHash = getDeviceHash(req);
+      const auth = await authenticateWrite(req, reply);
+      if (!auth) return reply;
+      const deviceHash = auth.deviceHash;
 
       const client = await pool.connect();
       try {

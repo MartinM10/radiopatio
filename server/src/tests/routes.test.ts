@@ -2,6 +2,12 @@ import assert from 'node:assert';
 import test from 'node:test';
 import { buildApp } from '../app';
 import { pool } from '../db';
+import { runMigrations } from '../db/migrate';
+import { devHeaders } from './helpers';
+
+test.before(async () => {
+  await runMigrations();
+});
 
 test.after(async () => {
   await pool.end();
@@ -32,6 +38,7 @@ test('Fastify app validates incident creation schema', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/incidents',
+      headers: await devHeaders('validacion'),
       payload: {},
     });
 
@@ -49,6 +56,7 @@ test('Fastify app rejects privacy violations on POST /api/incidents', async () =
     const res = await app.inject({
       method: 'POST',
       url: '/api/incidents',
+      headers: await devHeaders('privacidad'),
       payload: {
         category: 'hogar',
         zone: { gx: 3, gy: 3 },

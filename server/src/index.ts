@@ -1,11 +1,19 @@
 import { buildApp } from './app';
-import { config } from './config';
+import { assertProductionConfig, config } from './config';
 import { pool } from './db';
 import { runMigrations } from './db/migrate';
 import { seedIfEmpty } from './db/seed';
 import { purgeExpiredIncidents } from './db/purge';
 
 async function start() {
+  // Fail-closed: con secretos por defecto o débiles, producción no arranca.
+  try {
+    assertProductionConfig();
+  } catch (err) {
+    console.error((err as Error).message);
+    process.exit(1);
+  }
+
   const app = buildApp();
 
   try {
