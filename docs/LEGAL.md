@@ -63,10 +63,13 @@ Coordenadas y dispositivo en el backend actual:
   el `address` opcional es dato aportado por el vecino y depende del
   cuidado en no identificar a terceros (el filtro de texto no lo excluye;
   revisar en la EIPD — (*)).
-- La identidad es un **hash SHA-256 con sal** del identificador de
-  dispositivo; si el cliente no lo envía, se usa la **IP en forma de hash**.
-  El hash sigue siendo dato personal pseudonimizado (considerando 26): no
-  trasladar never el hash a ninguna API pública, ya aplicado.
+- La identidad es un **token de dispositivo emitido por el servidor**, del
+  que solo se guarda el hash; las escrituras sin token se rechazan. Las
+  cuentas verificadas con Google guardan un **HMAC con secreto** del `sub`
+  (nunca email ni nombre). Ambos siguen siendo datos personales
+  pseudonimizados (considerando 26): ninguno se traslada a una API pública.
+- Para limitar altas por IP se usa la IP de la petición en memoria, sin
+  guardarla en la base de datos.
 
 La publicación restringida por geografía (TRUST.md §3, capa 2) usa
 geolocalización con consentimiento: dato personal con base jurídica propia,

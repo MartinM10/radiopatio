@@ -50,7 +50,7 @@ docker compose run --rm -T server sh -c "npm run build && npm test && npm run ch
 - Sin cuentas ni datos personales. La ubicación se guarda en **celdas hexagonales de ~450 m**: la API devuelve el centro de la celda, nunca el GPS exacto.
 - Los avisos **caducan a las 72 h** y se purgan de la base de datos. Aparecen como «sin confirmar» hasta tener 2 confirmaciones vecinales, y en métricas agregadas pesan la mitad que los confirmados.
 - **No se registran personas** (ni identidades, ni antecedentes, ni procesos judiciales): solo hechos y zonas.
-- Los dispositivos se diferencian en servidor mediante un **hash SHA-256 + salt** del identificador de dispositivo que envía la app; si el cliente no lo envúa, se usa la IP en forma de hash (dato pseudonimizado, ver docs/LEGAL.md).
+- Toda escritura exige un **token de dispositivo emitido por el servidor** (solo se guarda su hash). Las cuentas verificadas con Google cuentan como una sola identidad, y con `REQUIRE_VERIFIED_IDENTITY=1` solo ellas pueden publicar o valorar avisos (dato pseudonimizado, ver docs/LEGAL.md).
 - Moderación comunitaria conforme a la DSA: avisos con 3 denuncias se ocultan automáticamente y pasan a la **cola de moderación con auditoría** (`/api/admin/moderation`, protected con `x-admin-token`).
 - La app **no sustituye al 112 ni a la denuncia formal** y lo dice en cada punto relevante.
 

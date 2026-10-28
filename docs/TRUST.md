@@ -38,11 +38,16 @@ Y por qué la identidad *privada* es necesaria:
   del origen de los contenidos (LSSI art. 12 / Ley 25/2007 (*) — pendiente de
   verificación legal, ver docs/LEGAL.md).
 
-Estado actual de la identidad: cada cliente envía un identificador de
-dispositivo aleatorio (`X-Device-Id`); el servidor solo guarda su hash SHA-256
-con sal (`device_hash`). Si el cliente no lo envía, se usa la IP en forma de
-hash (dato pseudonimizado; ver docs/LEGAL.md). Fase 2: cuentas pseudónimas
-reales (Google/OTP) para elevar el coste de crear identidades.
+Estado actual de la identidad: el servidor EMITE un token de dispositivo y
+solo guarda su hash. Toda escritura exige un token válido; ya no se acepta un
+identificador elegido por el cliente (`X-Device-Id`) ni la IP, que permitían
+fabricar identidades cambiando una cabecera. Los avisos guardan un
+`device_hash` derivado del id interno del dispositivo, estable aunque el token
+rote. Las cuentas verificadas con Google guardan `identity_hash` (HMAC con
+secreto del `sub`), único en BD: una cuenta, un dispositivo. Con
+`REQUIRE_VERIFIED_IDENTITY=1` solo esas cuentas pueden escribir; las altas
+anónimas están limitadas por IP. Todo sigue siendo dato pseudonimizado (ver
+docs/LEGAL.md).
 
 ## 2. El verdadero adversario: el ataque Sybil
 
@@ -133,8 +138,11 @@ está el vecino; añadir QA de presencia es fase 2).
 | Deduplicación semántica entre cuentas | ✅ | `server/src/lib/quality.ts` + POST |
 | Agregados públicos solo con confirmados + muestra mínima | ✅ | `GET /api/zones/alert` + `trustWeight` en el cliente |
 | Auto-ocultación por denuncias + cola de moderación + auditoría | ✅ (falta recurso del autor e informes) | `server/src/routes/moderation.ts` |
-| Identidad por hash + salt de dispositivo | ✅ | `server/src/lib/device.ts` (IP como hash de cuplido si falta el header) |
-| Cuentas pseudónimas con OTP/Google | 🔜 Fase 2 | el esquema es compatible |
+| Token emitido por el servidor, obligatorio en toda escritura | ✅ | `server/src/lib/device.ts` (`authenticateWrite`) |
+| Altas anónimas limitadas por IP | ✅ | `POST /api/devices/register` (`REGISTER_RATE_MAX`) |
+| Cuenta verificada con Google: una cuenta = un dispositivo | ✅ servidor · 🔜 login en la app | `POST /api/auth/google`, `identity_hash` único |
+| Solo cuentas verificadas escriben | ✅ (opt-in `REQUIRE_VERIFIED_IDENTITY=1`) | activar cuando la app tenga login |
+| Verificación por SMS | 🔜 (fail-closed: `501`) | falta proveedor |
 | Comprobación «estás en la celda que publicas» | 🔜 Fase 2 | §2 |
 | Cuarentena de ráfagas y scores de riesgo | 🔜 | §3 |
 | Recurso del autor + informes de transparencia | 🔜 | §3 capa 5 |
