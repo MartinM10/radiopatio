@@ -91,7 +91,7 @@ export const OnboardingModal: React.FC<Props> = ({
               <View style={styles.featureTextCol}>
                 <Text style={styles.featureTitle}>Privacidad de tu hogar (~450 m)</Text>
                 <Text style={styles.featureDesc}>
-                  Tu posición exacta nunca se publica ni se guarda. Los avisos se agrupan en celdas hexagonales aproximadas.
+                  Tu posición exacta nunca se muestra a otros vecinos y solo se guarda 72 h para evitar fraudes. Los avisos se agrupan en celdas hexagonales aproximadas.
                 </Text>
               </View>
             </View>
