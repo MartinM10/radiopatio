@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eliminar mi cuenta y mis datos — Radio Patio</title>
+  <meta name="description" content="Cómo eliminar tu cuenta y tus datos de Radio Patio: desde la app o por correo, qué se borra y qué se conserva.">
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/radio-patio-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070A13;
+      --bg-card: rgba(18, 24, 43, 0.7);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --primary: #6366F1;
+      --primary-hover: #4F46E5;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --nav-bg: rgba(7, 10, 19, 0.85);
+    }
+
+    [data-theme="light"] {
+      --bg-dark: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-card: rgba(15, 23, 42, 0.09);
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --text-main: #0F172A;
+      --text-muted: #475569;
+      --text-dim: #64748B;
+      --nav-bg: rgba(248, 250, 252, 0.88);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.7;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border-card);
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 72px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.25rem;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #021536;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .brand-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .content-box {
+      padding: 60px 0 100px;
+    }
+
+    h1 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .update-date {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-card);
+    }
+
+    h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.45rem;
+      margin: 36px 0 16px;
+      color: #E2E8F0;
+    }
+
+    p, ul {
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      font-size: 1rem;
+    }
+
+    ul {
+      padding-left: 24px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    strong {
+      color: var(--text-main);
+    }
+
+    .highlight-card {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 28px 0;
+    }
+
+    .highlight-card p {
+      margin-bottom: 0;
+      color: #CBD5E1;
+    }
+
+    footer {
+      border-top: 1px solid var(--border-card);
+      padding: 40px 0;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    a {
+      color: #A5B4FC;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="container nav-inner">
+      <a href="/" class="brand">
+        <div class="brand-icon">
+          <img src="assets/radio-patio-logo.png" alt="Radio Patio Logo" width="38" height="38">
+        </div>
+        <span>Radio Patio</span>
+      </a>
+      <a href="/" style="text-decoration: none; font-size: 0.9rem; color: var(--text-muted);">← Volver al inicio</a>
+    </div>
+  </nav>
+
+  <div class="container content-box">
+    <h1>Eliminar mi cuenta y mis datos</h1>
+    <div class="update-date">Radio Patio · Última actualización: 28 de octubre de 2026</div>
+
+    <div class="highlight-card">
+      <p><strong>En resumen:</strong> en Radio Patio no hay nombre de usuario ni contraseña. Tu "cuenta" es la verificación con Google de este dispositivo. Puedes borrarla tú mismo, al instante, desde la app, o pedirlo por correo.</p>
+    </div>
+
+    <h2>Cómo borrarla desde la app (instantáneo)</h2>
+    <ol style="padding-left:24px;color:var(--text-muted);margin-bottom:18px;">
+      <li>Abre la app <strong>Radio Patio</strong>.</li>
+      <li>Ve a la pestaña <strong>Ayuda</strong>.</li>
+      <li>Pulsa <strong>Borrar mi identidad y mis datos</strong> y confirma.</li>
+    </ol>
+    <p>Si ya no tienes la app instalada, instálala de nuevo, inicia sesión con la misma cuenta de Google (al publicar, confirmar o denunciar algo) y sigue los pasos anteriores. También puedes pedirlo por correo.</p>
+
+    <h2>Cómo pedirlo por correo</h2>
+    <p>Escribe a <a href="mailto:privacidad@radiopatio.app">privacidad@radiopatio.app</a> con el asunto «Eliminar mis datos de Radio Patio». Te pediremos que inicies sesión con la misma cuenta de Google desde la app o que nos indiques el momento aproximado de tus avisos, para localizar tu registro sin pedirte tu nombre. Respondemos en un máximo de 30 días.</p>
+
+    <h2>Qué se elimina</h2>
+    <ul>
+      <li>La verificación de tu cuenta de Google (el código irreversible que guardamos, nunca tu nombre, email ni foto).</li>
+      <li>El token de tu dispositivo y su última posición conocida.</li>
+      <li>Todos los avisos que hayas publicado.</li>
+      <li>Tus confirmaciones («Lo he visto») y denuncias en avisos de otros vecinos, con los contadores corregidos.</li>
+    </ul>
+
+    <h2>Qué se conserva y durante cuánto tiempo</h2>
+    <ul>
+      <li><strong>Registros técnicos de conexión</strong> (por ejemplo, límites de velocidad): de forma rotativa, un máximo de 7 días, solo por seguridad y estabilidad del servicio.</li>
+      <li><strong>Registro de moderación</strong> de avisos ocultados: no contiene tu identidad ni datos de tu cuenta.</li>
+      <li><strong>Copias de seguridad del servidor:</strong> pueden contener datos borrados hasta que se renueven en un máximo de 14 días.</li>
+    </ul>
+
+    <h2>Después de borrar</h2>
+    <p>El borrado es <strong>irreversible</strong>. Podrás seguir viendo el mapa y los avisos sin cuenta; para volver a publicar, confirmar o denunciar tendrás que verificarte de nuevo con Google.</p>
+
+    <p>Más información en la <a href="/privacidad.html">Política de Privacidad</a>.</p>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div>© 2026 Radio Patio • <a href="/terminos.html">Términos de Servicio</a> • <a href="/">Volver a la portada</a></div>
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      const theme = localStorage.getItem('radio-patio-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</body>
+</html>
