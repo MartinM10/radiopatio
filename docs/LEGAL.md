@@ -73,7 +73,7 @@ Coordenadas y dispositivo en el backend actual:
 
 La publicación restringida por geografía (TRUST.md §3, capa 2) usa
 geolocalización con consentimiento: dato personal con base jurídica propia,
-minimización (se comprueba la celda, no se guarda) y explicación clara en la
+minimización (la API solo devuelve la celda; las coordenadas recibidas se conservan como máximo 72 h para el control antifraude) y explicación clara en la
 primera ejecución.
 
 ## Pendiente antes de lanzar
