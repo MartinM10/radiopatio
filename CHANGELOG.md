@@ -7,6 +7,30 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.3.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.2.0...radiopatio-v1.3.0) (2026-10-28)
+
+
+### ✨ Funcionalidades
+
+* **app:** Google sign-in gate for writing and delete-my-identity button ([ba34681](https://github.com/MartinM10/radiopatio/commit/ba34681cbaf1239e214e4738389ddc1ef7b3305f))
+* **server:** require Google-verified identity to write and add identity deletion ([ea42dbe](https://github.com/MartinM10/radiopatio/commit/ea42dbefd1291b3ed4694f91d977b1dfb93a63e9))
+
+
+### 📝 Documentación
+
+* describe verified identity model in README, TRUST and LEGAL ([0de11f5](https://github.com/MartinM10/radiopatio/commit/0de11f51753f5d5f6fff8e780e6ac448786d195b))
+* **landing:** align privacy policy and terms with Google verification ([05915a9](https://github.com/MartinM10/radiopatio/commit/05915a96be5af76261aa13079575f934fc02d0a9))
+
+
+### 📦 Compilación y EAS
+
+* **app:** bump android versionCode to 6 ([36851e6](https://github.com/MartinM10/radiopatio/commit/36851e6a3d04a33950433c89b0db91c09f266924))
+
+
+### 🔧 Mantenimiento
+
+* **scripts:** add google play feature graphic generator and ignore generated assets ([295b06b](https://github.com/MartinM10/radiopatio/commit/295b06b6bd015d890b5c9fd475e3c5a48b6dbd58))
+
 ## [1.2.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.1.2...radiopatio-v1.2.0) (2026-10-26)
 
 
