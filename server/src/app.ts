@@ -5,6 +5,7 @@ import fastify, { FastifyInstance } from 'fastify';
 import { config } from './config';
 import { categoryRoutes } from './routes/categories';
 import { deviceRoutes } from './routes/devices';
+import { geocodeRoutes } from './routes/geocode';
 import { healthRoutes } from './routes/health';
 import { incidentRoutes } from './routes/incidents';
 import { moderationRoutes } from './routes/moderation';
@@ -66,6 +67,7 @@ export function buildApp(): FastifyInstance {
   app.register(healthRoutes);
   app.register(categoryRoutes);
   app.register(deviceRoutes);
+  app.register(geocodeRoutes);
   app.register(incidentRoutes);
   app.register(moderationRoutes);
   app.register(zoneRoutes);

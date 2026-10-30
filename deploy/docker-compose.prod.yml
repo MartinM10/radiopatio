@@ -61,6 +61,8 @@ services:
       REGISTER_RATE_MAX: ${REGISTER_RATE_MAX:-10}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       REQUIRE_VERIFIED_IDENTITY: ${REQUIRE_VERIFIED_IDENTITY:-0}
+      # Sugerencia de calle (el servidor consulta Nominatim sin identidad del vecino). 0 = apagada.
+      GEOCODER_ENABLED: ${GEOCODER_ENABLED:-1}
       CORS_ORIGIN: ${CORS_ORIGIN}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-600}
       PURGE_INTERVAL_MINUTES: ${PURGE_INTERVAL_MINUTES:-15}

@@ -15,6 +15,7 @@ import {
   MIN_GAP_MS,
   type DedupRecord,
 } from '../lib/quality';
+import { sanitizeAddress } from '../lib/address';
 import { checkText } from '../lib/privacy';
 import { CategoryId, Incident } from '../types';
 
@@ -42,7 +43,12 @@ const createIncidentSchema = z.object({
     gy: z.number().int().min(0).max(100).optional().default(5),
     lat: z.number().min(-90).max(90).optional(),
     lng: z.number().min(-180).max(180).optional(),
-    address: z.string().max(250).optional(),
+    // La calle es opcional y se publica: sin número de portal ni puerta.
+    address: z
+      .string()
+      .max(250)
+      .optional()
+      .transform((v) => (v ? sanitizeAddress(v) || undefined : undefined)),
   }),
   description: z.string().trim().min(10, 'La descripción debe tener al menos 10 caracteres').max(280, 'La descripción no puede superar 280 caracteres'),
 });
@@ -225,7 +231,9 @@ export async function incidentRoutes(app: FastifyInstance) {
     const { category, zone, description } = parseRes.data;
 
     // Validación de privacidad (RGPD / LOPD / DSA)
-    const privacyProblem = checkText(description);
+    // La calle pasa el mismo filtro que la descripción: no es un hueco para
+    // colar teléfonos, correos, matrículas o nombres.
+    const privacyProblem = checkText(description) ?? (zone.address ? checkText(zone.address) : null);
     if (privacyProblem) {
       return reply.status(400).send({
         error: 'PRIVACY_VIOLATION',

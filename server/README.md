@@ -46,6 +46,7 @@ Todas las escrituras (publicar, confirmar, denunciar, recurrir) exigen un token 
 - `POST /api/auth/google`: `{ "idToken": "..." }`. Requiere `GOOGLE_CLIENT_ID`; sin él responde `503`. Una cuenta de Google = un dispositivo: un nuevo login rota el token.
 - `POST /api/auth/otp/*`: `501` hasta integrar un proveedor de SMS.
 - Con `REQUIRE_VERIFIED_IDENTITY=1`, solo las cuentas verificadas pueden escribir (`403 IDENTITY_REQUIRED`).
+- `POST /api/geocode/reverse`: `{ "lat": 36.72, "lng": -4.42 }` → `{ data: { street, locality, label } }`. Sugiere la calle de un punto (sin número de portal). Exige `X-Device-Token` (cualquier dispositivo registrado), límite 20/min por IP. Consulta Nominatim desde el servidor, con caché y como máximo 1 petición/s; no guarda ni registra las coordenadas (viajan en el cuerpo, no en la URL). `GEOCODER_ENABLED=0` la apaga, `GEOCODER_URL` apunta a un Nominatim propio. Ante cualquier fallo devuelve valores nulos y la app deja que el vecino escriba la calle.
 
 ---
 

@@ -48,6 +48,14 @@ export const config = {
   // Client ID de OAuth de Google. Sin él, el login con Google se rechaza
   // (fail-closed): jamás se aceptan tokens emitidos para otra aplicación.
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+
+  // ── Geocodificación inversa (calle sugerida al fijar el pin) ──────────────
+  // El servidor consulta un servicio externo con las coordenadas, sin ninguna
+  // identidad del vecino (ver lib/geocode.ts). GEOCODER_ENABLED=0 la apaga y
+  // la app pide la calle a mano; GEOCODER_URL permite un Nominatim propio.
+  geocoderEnabled: process.env.GEOCODER_ENABLED !== '0',
+  geocoderUrl: (process.env.GEOCODER_URL || 'https://nominatim.openstreetmap.org').replace(/\/+$/, ''),
+  geocoderContact: process.env.GEOCODER_CONTACT || 'privacidad@radiopatio.app',
 };
 
 type ProductionView = Pick<typeof config, 'env' | 'databaseUrl' | 'deviceSalt' | 'adminToken'>;
