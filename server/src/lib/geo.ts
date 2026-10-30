@@ -21,9 +21,13 @@ export function snapToHexGrid(
   radiusMeters: number = HEX_RADIUS_METERS,
 ): HexCellRef {
   const latStep = (radiusMeters * 1.5) / 111320;
-  const lngStep = (radiusMeters * Math.sqrt(3)) / (111320 * Math.cos((lat * Math.PI) / 180));
-
   const row = Math.round(lat / latStep);
+  // El ancho de columna se calcula con la latitud del CENTRO de la fila, no con
+  // la del punto: así todos los puntos de una celda comparten exactamente el
+  // mismo centro. Con la latitud del punto, el centro publicado variaba unos
+  // metros según dónde estuviera el aviso y delataba su posición norte-sur.
+  const rowLat = row * latStep;
+  const lngStep = (radiusMeters * Math.sqrt(3)) / (111320 * Math.cos((rowLat * Math.PI) / 180));
   const colOffset = (Math.abs(row) % 2) * 0.5;
   const col = Math.round((lng / lngStep) - colOffset);
 
