@@ -16,6 +16,8 @@ export default function App() {
   const [tab, setTab] = useState<TabId>('map');
   const [reporting, setReporting] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // Aviso a centrar en el mapa cuando se llega desde «Ver en el mapa».
+  const [mapFocus, setMapFocus] = useState<{ id: string; nonce: number } | null>(null);
 
   return (
     <SafeAreaProvider>
@@ -24,11 +26,25 @@ export default function App() {
           <StatusBar style="dark" />
           <SafeAreaView style={styles.root} edges={['top']}>
             <View style={{ flex: 1 }}>
-              {tab === 'map' && <HomeScreen />}
-              {tab === 'feed' && <FeedScreen />}
+              {tab === 'map' && <HomeScreen focusId={mapFocus?.id ?? null} focusNonce={mapFocus?.nonce ?? 0} />}
+              {tab === 'feed' && (
+                <FeedScreen
+                  onShowOnMap={(id) => {
+                    setMapFocus({ id, nonce: Date.now() });
+                    setTab('map');
+                  }}
+                />
+              )}
               {tab === 'help' && <HelpScreen onOpenOnboarding={() => setShowOnboarding(true)} />}
             </View>
-            <TabBar active={tab} onChange={setTab} onReport={() => setReporting(true)} />
+            <TabBar
+              active={tab}
+              onChange={(t) => {
+                setMapFocus(null);
+                setTab(t);
+              }}
+              onReport={() => setReporting(true)}
+            />
           </SafeAreaView>
 
           <Modal visible={reporting} animationType="slide" onRequestClose={() => setReporting(false)}>

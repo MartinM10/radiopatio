@@ -175,6 +175,31 @@ export async function apiDeleteIdentity(): Promise<void> {
   deviceTokenRegistered = false;
 }
 
+export interface StreetSuggestion {
+  street: string | null;
+  locality: string | null;
+  /** «Calle Mayor, Málaga»; null si no se ha podido determinar. */
+  label: string | null;
+}
+
+/**
+ * Calle sugerida para un punto del mapa. La consulta la hace el servidor (no el
+ * móvil), así el servicio externo no ve la IP ni el dispositivo del vecino.
+ * Nunca lanza: sin calle (sin red, servicio caído, función apagada) devuelve
+ * null y el vecino escribe la calle a mano.
+ */
+export async function apiReverseGeocode(lat: number, lng: number): Promise<StreetSuggestion | null> {
+  try {
+    const res = await apiFetch<{ data: StreetSuggestion }>('/api/geocode/reverse', {
+      method: 'POST',
+      body: JSON.stringify({ lat, lng }),
+    });
+    return res.data?.label ? res.data : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function isDeviceVerified(): Promise<boolean> {
   try {
     return (await AsyncStorage.getItem(DEVICE_VERIFIED_KEY)) === '1';

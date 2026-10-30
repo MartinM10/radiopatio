@@ -14,11 +14,18 @@ import { useIncidents } from '../store';
 import { colors, radius } from '../theme';
 import { areaName } from '../data/neighborhood';
 
-export const HomeScreen = () => {
+interface HomeProps {
+  /** Aviso a centrar al abrir (desde «Ver en el mapa» en la lista de avisos). */
+  focusId?: string | null;
+  focusNonce?: number;
+}
+
+export const HomeScreen = ({ focusId = null, focusNonce = 0 }: HomeProps) => {
   const { incidents } = useIncidents();
   const [filter, setFilter] = useState<CategoryId | 'all'>('all');
-  const [selected, setSelected] = useState<string | null>(null);
-  const [timeframe, setTimeframe] = useState<'24h' | 'week' | 'month'>('week');
+  const [selected, setSelected] = useState<string | null>(focusId);
+  // Con un aviso concreto se amplía el periodo para que siempre aparezca.
+  const [timeframe, setTimeframe] = useState<'24h' | 'week' | 'month'>(focusId ? 'month' : 'week');
   const [mapFocused, setMapFocused] = useState(false);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -193,6 +200,8 @@ export const HomeScreen = () => {
         showNeighborhoods={true}
         onFocusMap={setMapFocused}
         userLocation={userLoc}
+        focusId={focusId}
+        focusNonce={focusNonce}
       />
 
       {/* Leyenda de delincuencia por sectores hexagonales */}

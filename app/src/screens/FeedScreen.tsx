@@ -22,12 +22,14 @@ import { useIncidents } from '../store';
 import { colors, radius } from '../theme';
 
 type Mode = 'all' | 'near' | 'mine';
+type Sort = 'recent' | 'near';
 
-export const FeedScreen = () => {
+export const FeedScreen = ({ onShowOnMap }: { onShowOnMap?: (id: string) => void }) => {
   const { incidents, refresh, ready } = useIncidents();
   const [mode, setMode] = useState<Mode>('all');
   const [catFilter, setCatFilter] = useState<CategoryId | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<Sort>('recent');
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -40,6 +42,16 @@ export const FeedScreen = () => {
       cancelled = true;
     };
   }, []);
+
+  const onSort = (next: Sort) => {
+    setSort(next);
+    Haptics.selectionAsync().catch(() => {});
+    if (next === 'near' && !userLoc) {
+      getUserLocation(true).then((loc) => {
+        if (loc) setUserLoc(loc);
+      });
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -82,8 +94,16 @@ export const FeedScreen = () => {
       );
     }
 
+    if (sort === 'near' && userLoc) {
+      // Más cercanos primero (los avisos sin coordenadas, al final); a igual distancia, el más reciente.
+      const dist = (i: (typeof l)[number]) =>
+        i.zone.lat != null && i.zone.lng != null
+          ? haversineMeters(userLoc, { lat: i.zone.lat, lng: i.zone.lng })
+          : Number.POSITIVE_INFINITY;
+      return l.sort((a, b) => dist(a) - dist(b) || b.createdAt - a.createdAt);
+    }
     return l.sort((a, b) => b.createdAt - a.createdAt);
-  }, [incidents, mode, catFilter, search, userLoc]);
+  }, [incidents, mode, catFilter, search, userLoc, sort]);
 
   const tabs: { id: Mode; label: string }[] = [
     { id: 'all', label: 'Todos' },
@@ -157,6 +177,30 @@ export const FeedScreen = () => {
               </Pressable>
             ))}
           </View>
+
+          {/* Orden de la lista */}
+          <View style={styles.sortRow}>
+            <Text style={styles.sortLabel}>Ordenar por</Text>
+            {(
+              [
+                ['recent', 'Más recientes'],
+                ['near', 'Más cercanos'],
+              ] as const
+            ).map(([id, label]) => (
+              <Pressable
+                key={id}
+                onPress={() => onSort(id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: sort === id }}
+                style={({ pressed }) => [styles.chip, sort === id && styles.chipOn, pressed && { opacity: 0.8 }]}
+              >
+                <Text style={[styles.chipText, sort === id && { color: '#fff' }]}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {sort === 'near' && !userLoc && (
+            <Text style={styles.sortHint}>Activa la ubicación para ordenar por cercanía.</Text>
+          )}
 
           {/* Carrusel de chips de categoría */}
           <ScrollView
@@ -272,7 +316,7 @@ export const FeedScreen = () => {
           </View>
         )
       }
-      renderItem={({ item }) => <IncidentCard incident={item} />}
+      renderItem={({ item }) => <IncidentCard incident={item} onShowOnMap={onShowOnMap} />}
     />
   );
 };
@@ -329,6 +373,9 @@ const styles = StyleSheet.create({
   segItem: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.pill },
   segOn: { backgroundColor: colors.primary },
   segText: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  sortRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sortLabel: { color: colors.muted, fontSize: 12, fontWeight: '700' },
+  sortHint: { color: colors.muted, fontSize: 12, marginTop: -4 },
   chipsScroll: { gap: 8, paddingVertical: 2 },
   chip: {
     flexDirection: 'row',

@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -17,8 +18,9 @@ import { CategoryIcon } from '../components/CategoryIcon';
 import { useIdentity } from '../components/IdentityGate';
 import { OpenStreetMap } from '../components/OpenStreetMap';
 import { categories, categoryById } from '../data/categories';
-import { areaName } from '../data/neighborhood';
 import { CategoryId, Zone } from '../data/types';
+import { MAX_ADDRESS, sanitizeAddress } from '../lib/address';
+import { apiReverseGeocode } from '../lib/api';
 import { checkText } from '../lib/privacy';
 import { useIncidents } from '../store';
 import { colors, radius, severityColor } from '../theme';
@@ -37,20 +39,47 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
   const [text, setText] = useState('');
   const [ack, setAck] = useState(false);
   const [mapFocused, setMapFocused] = useState(false);
+  // Calle (opcional): llega sugerida a partir del pin y el vecino puede
+  // corregirla, escribirla a mano o borrarla.
+  const [street, setStreet] = useState('');
+  const [suggesting, setSuggesting] = useState(false);
+  const streetTouched = useRef(false);
 
   const displayedCategories = useMemo(() => {
     if (activeTab === 'all') return categories;
     return categories.filter((c) => (c.group ?? 'general') === activeTab || (activeTab === 'servicios' && c.group === 'general'));
   }, [activeTab]);
 
+  // Sugerir la calle del pin. La consulta la hace el servidor; si falla o no hay
+  // calle, el campo queda para escribirla a mano. Lo que el vecino haya escrito
+  // o corregido no se pisa.
+  useEffect(() => {
+    if (zone?.lat == null || zone?.lng == null) return;
+    const { lat, lng } = zone;
+    let cancelled = false;
+    setSuggesting(true);
+    const timer = setTimeout(async () => {
+      const suggestion = await apiReverseGeocode(lat, lng);
+      if (cancelled) return;
+      setSuggesting(false);
+      if (!streetTouched.current) setStreet(suggestion?.label ?? '');
+    }, 700);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      setSuggesting(false);
+    };
+  }, [zone?.lat, zone?.lng]);
+
   const problem = text.length >= 3 ? checkText(text) : null;
-  const canSend = !!cat && !!zone && text.trim().length >= MIN && !problem && ack;
+  const streetProblem = street.length >= 3 ? checkText(street) : null;
+  const canSend = !!cat && !!zone && text.trim().length >= MIN && !problem && !streetProblem && ack;
 
   const send = async () => {
     if (!canSend || !cat || !zone) return;
     // Publicar exige identidad verificada (se pide una sola vez).
     if (!(await requireIdentity())) return;
-    addIncident({ category: cat, zone, description: text });
+    addIncident({ category: cat, zone: { ...zone, address: sanitizeAddress(street) || undefined }, description: text });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setStep(3);
   };
@@ -175,10 +204,29 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
             onFocusMap={setMapFocused}
           />
           {zone && (
-            <View style={styles.zoneRow}>
-              <AppIcon name="map-pin" color={colors.accent} size={15} />
-              <Text style={styles.zoneText}>
-                {zone.address || areaName(zone)} · aproximada (~450m)
+            <View style={styles.streetBox}>
+              <View style={styles.zoneRow}>
+                <AppIcon name="map-pin" color={colors.accent} size={15} />
+                <Text style={styles.zoneText}>Calle (opcional) · la zona se muestra aproximada (~450 m)</Text>
+              </View>
+              <View style={styles.streetInputRow}>
+                <TextInput
+                  value={street}
+                  onChangeText={(t) => {
+                    streetTouched.current = true;
+                    setStreet(t.slice(0, MAX_ADDRESS));
+                  }}
+                  placeholder="Ej.: Calle Mayor"
+                  placeholderTextColor={colors.muted}
+                  autoCapitalize="words"
+                  accessibilityLabel="Calle donde ocurrió, opcional"
+                  style={[styles.streetInput, streetProblem ? { borderColor: colors.danger } : null]}
+                />
+                {suggesting && <ActivityIndicator size="small" color={colors.muted} />}
+              </View>
+              <Text style={[styles.streetHint, streetProblem ? { color: colors.danger } : null]}>
+                {streetProblem ??
+                  'Sugerida a partir del pin: corrígela si no es exacta o bórrala si prefieres no indicarla. Sin número de portal.'}
               </Text>
             </View>
           )}
@@ -339,6 +387,20 @@ const styles = StyleSheet.create({
   tileHint: { color: colors.muted, fontSize: 11, lineHeight: 15 },
   selCat: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.line },
   selCatText: { color: colors.text, fontWeight: '800', fontSize: 13 },
+  streetBox: { gap: 8 },
+  streetInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  streetInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    color: colors.text,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+  },
+  streetHint: { color: colors.muted, fontSize: 12, lineHeight: 16 },
   zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   zoneText: { color: colors.accent, fontSize: 12, fontWeight: '600' },
   input: {

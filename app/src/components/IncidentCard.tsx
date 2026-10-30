@@ -5,6 +5,7 @@ import { apiAppealIncident } from '../lib/api';
 import { categoryById } from '../data/categories';
 import { areaName } from '../data/neighborhood';
 import { Incident } from '../data/types';
+import { readableAddress } from '../lib/address';
 import { timeAgo } from '../lib/privacy';
 import { useIncidents } from '../store';
 import { colors, radius, severityColor, severityLabel } from '../theme';
@@ -15,11 +16,13 @@ import { CategoryIcon } from './CategoryIcon';
 interface Props {
   incident: Incident;
   compact?: boolean;
+  /** Si se pasa, la tarjeta ofrece «Ver en el mapa». */
+  onShowOnMap?: (id: string) => void;
 }
 
 const tap = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
-export const IncidentCard = ({ incident, compact }: Props) => {
+export const IncidentCard = ({ incident, compact, onShowOnMap }: Props) => {
   const { confirm, flag, isConfirmed } = useIncidents();
   const { requireIdentity } = useIdentity();
   const cat = categoryById(incident.category);
@@ -52,19 +55,38 @@ export const IncidentCard = ({ incident, compact }: Props) => {
             <Text style={styles.title}>{cat.label}</Text>
             <View style={styles.metaRow}>
               <AppIcon name="map-pin" color={colors.muted} size={12} />
-              <Text style={styles.meta}>
-                {incident.zone.address || areaName(incident.zone)} · {timeAgo(incident.createdAt)}
+              <Text style={styles.meta} numberOfLines={1}>
+                {readableAddress(incident.zone.address) ?? areaName(incident.zone)}
               </Text>
             </View>
           </View>
-          <View style={[styles.sevPill, { borderColor: sev + '60', backgroundColor: sev + '15' }]}>
-            <Text style={[styles.sevText, { color: sev }]}>{severityLabel[cat.severity]}</Text>
+          <View style={styles.pills}>
+            <View style={[styles.sevPill, { borderColor: sev + '60', backgroundColor: sev + '15' }]}>
+              <Text style={[styles.sevText, { color: sev }]}>{severityLabel[cat.severity]}</Text>
+            </View>
+            <View style={styles.timePill}>
+              <AppIcon name="clock" color={colors.muted} size={11} />
+              <Text style={styles.timeText}>{timeAgo(incident.createdAt)}</Text>
+            </View>
           </View>
         </View>
 
         <Text style={styles.desc} numberOfLines={compact ? 3 : undefined}>
           {incident.description}
         </Text>
+
+        {onShowOnMap && incident.zone.lat != null && incident.zone.lng != null && (
+          <Pressable
+            onPress={() => onShowOnMap(incident.id)}
+            accessibilityRole="button"
+            accessibilityLabel="Ver este aviso en el mapa"
+            hitSlop={8}
+            style={styles.mapLink}
+          >
+            <AppIcon name="map-pin" color={colors.primary} size={13} />
+            <Text style={styles.mapLinkText}>Ver en el mapa</Text>
+          </Pressable>
+        )}
 
         <View style={styles.footer}>
           <View
@@ -178,6 +200,19 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 16, fontWeight: '700' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   meta: { color: colors.muted, fontSize: 12 },
+  pills: { alignItems: 'flex-end', gap: 6 },
+  timePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surface2,
+    borderRadius: radius.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  timeText: { color: colors.muted, fontSize: 11, fontWeight: '700' },
+  mapLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  mapLinkText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
   sevPill: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
   sevText: { fontSize: 11, fontWeight: '700' },
   desc: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },

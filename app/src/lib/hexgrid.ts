@@ -1,5 +1,7 @@
 import { Incident } from '../data/types';
 import { categoryById } from '../data/categories';
+import { placeLabel } from '../data/places';
+import { readableAddress } from './address';
 import { CONFIRMED_AT } from './dataQuality';
 
 export interface HexCell {
@@ -47,9 +49,13 @@ export function getHexagonPolygon(
  */
 export function snapToHexGrid(lat: number, lng: number, radiusMeters = HEX_RADIUS_METERS): { key: string; centerLat: number; centerLng: number } {
   const latStep = (radiusMeters * 1.5) / 111320;
-  const lngStep = (radiusMeters * Math.sqrt(3)) / (111320 * Math.cos((lat * Math.PI) / 180));
-
   const row = Math.round(lat / latStep);
+  // El ancho de columna se calcula con la latitud del CENTRO de la fila, no con
+  // la del punto: así todos los puntos de una celda comparten exactamente el
+  // mismo centro. Con la latitud del punto, el centro publicado variaba unos
+  // metros según dónde estuviera el aviso y delataba su posición norte-sur.
+  const rowLat = row * latStep;
+  const lngStep = (radiusMeters * Math.sqrt(3)) / (111320 * Math.cos((rowLat * Math.PI) / 180));
   const colOffset = (Math.abs(row) % 2) * 0.5;
   const col = Math.round((lng / lngStep) - colOffset);
 
@@ -165,11 +171,10 @@ export function buildHexGridForIncidents(
     }
 
     // Extraer nombre legible del lugar (del aviso más reciente o coordenadas)
-    let name = `Sector [${data.center[0].toFixed(3)}, ${data.center[1].toFixed(3)}]`;
-    const incWithAddr = data.incidents.find((i) => i.zone?.address && i.zone.address.length > 3);
-    if (incWithAddr?.zone?.address) {
-      name = incWithAddr.zone.address.split(',')[0];
-    }
+    // Nunca coordenadas: la calle de algún aviso de la celda o, si no hay, la ciudad más próxima.
+    let name = `Zona · ${placeLabel(data.center[0], data.center[1])}`;
+    const street = data.incidents.map((i) => readableAddress(i.zone?.address)).find((a) => a && a.length > 3);
+    if (street) name = street.split(',')[0];
 
     result.push({
       id: key,

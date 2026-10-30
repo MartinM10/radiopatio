@@ -28,6 +28,10 @@ interface Props {
   onFocusMap?: (active: boolean) => void;
   /** Ubicación del vecino (consentida) para centrar el mapa donde está. */
   userLocation?: { lat: number; lng: number } | null;
+  /** Aviso a centrar y abrir en el mapa (desde la lista de avisos). */
+  focusId?: string | null;
+  /** Cambia en cada petición para volver a centrar el mismo aviso. */
+  focusNonce?: number;
 }
 
 const DEFAULT_CENTER = { lat: 40.2, lng: -3.7 }; // Centro geográfico aproximado de España
@@ -43,6 +47,8 @@ export const OpenStreetMap: React.FC<Props> = ({
   showNeighborhoods = true,
   onFocusMap,
   userLocation = null,
+  focusId = null,
+  focusNonce = 0,
 }) => {
   const webViewRef = useRef<any>(null);
   const [loadingGps, setLoadingGps] = useState(false);
@@ -105,7 +111,6 @@ export const OpenStreetMap: React.FC<Props> = ({
           gy: 5,
           lat,
           lng,
-          address: `Ubicación GPS [${lat.toFixed(4)}, ${lng.toFixed(4)}]`,
         });
       }
     } catch (err) {
@@ -119,7 +124,7 @@ export const OpenStreetMap: React.FC<Props> = ({
   // Al arrancar, centra en el vecino SOLO si ya concedió el permiso de
   // ubicación (sin diálogos sorpresa): una app nacional abre donde estás tú.
   useEffect(() => {
-    if (!mapReady || pickMode) return;
+    if (!mapReady || pickMode || focusId) return;
     (async () => {
       try {
         const perm = await Location.getForegroundPermissionsAsync();
@@ -138,6 +143,14 @@ export const OpenStreetMap: React.FC<Props> = ({
     })();
   }, [mapReady, pickMode]);
 
+  // Desde la lista de avisos: centra el mapa en un aviso y abre su ficha.
+  useEffect(() => {
+    if (!mapReady || !focusId || pickMode) return;
+    webViewRef.current?.injectJavaScript(
+      `if (window.focusIncident) { window.focusIncident(${JSON.stringify(focusId)}); } true;`,
+    );
+  }, [mapReady, focusId, focusNonce, pickMode]);
+
   // Generar HTML interactivo con Leaflet + OpenStreetMap + Rejilla Hexagonal H3
   const leafletHtml = useMemo(() => {
     const markersData = incidents.map((inc) => {
@@ -154,6 +167,7 @@ export const OpenStreetMap: React.FC<Props> = ({
         label: cat.label,
         desc: inc.description.replace(/"/g, "'"),
         color,
+        severity: cat.severity,
         confirmations: inc.confirmations,
       };
     });
@@ -269,19 +283,44 @@ export const OpenStreetMap: React.FC<Props> = ({
       color: #475569;
       line-height: 1.45;
     }
-    .hex-label {
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      border-radius: 8px;
-      color: #0F172A;
-      font-size: 11px;
+    .count-pin {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+      color: #FFFFFF;
       font-weight: 800;
-      padding: 3px 8px;
-      text-align: center;
-      white-space: nowrap;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+      font-size: 17px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      cursor: pointer;
     }
+    .group-list { max-height: 190px; overflow-y: auto; }
+    .group-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 2px;
+      border-top: 1px solid #E2E8F0;
+      cursor: pointer;
+    }
+    .group-row:first-child { border-top: none; }
+    .group-ico {
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #FF5A4F;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .group-txt { flex: 1; font-size: 11px; color: #475569; line-height: 1.35; }
+    .group-txt b { color: #0F172A; font-size: 12px; }
+    .group-go { flex: none; color: #4F46E5; font-weight: 800; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -347,6 +386,13 @@ export const OpenStreetMap: React.FC<Props> = ({
       }
     }
 
+    // Todo texto escrito por vecinos entra en el HTML del mapa: se escapa.
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
     function sendToNative(data) {
       if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
         window.ReactNativeWebView.postMessage(JSON.stringify(data));
@@ -380,47 +426,88 @@ export const OpenStreetMap: React.FC<Props> = ({
         }).addTo(map);
 
         poly.bindPopup(
-          '<div class="popup-title">⬡ ' + h.name + '</div>' +
+          '<div class="popup-title">⬡ ' + esc(h.name) + '</div>' +
           '<div class="popup-desc">' +
           '<strong>Nivel de alerta:</strong> <span style="color:' + h.color + '; font-weight:800">' + h.levelLabel.toUpperCase() + '</span><br/>' +
           '<strong>Avisos en el sector:</strong> ' + h.incidentCount + '<br/>' +
           '<strong>Gravedad acumulada:</strong> ' + h.severityScore + ' pts' +
           '</div>'
         );
-
-        if (h.incidentCount > 0) {
-          const labelIcon = L.divIcon({
-            className: 'hex-label-wrap',
-            html: '<div class="hex-label" style="border-left: 3px solid ' + h.color + '">' + h.name + ' (' + h.incidentCount + ')</div>',
-            iconSize: [120, 20],
-            iconAnchor: [60, 10]
-          });
-          L.marker(h.center, { icon: labelIcon, interactive: false }).addTo(map);
-        }
       });
     }
 
     if (!isPickMode) {
-      // Modo Visualización: añadir marcadores de avisos
+      // Modo Visualización: los avisos de una misma celda llegan con las mismas
+      // coordenadas (el servidor publica el centro de la celda), así que se
+      // agrupan en un solo marcador con el número de avisos.
+      const groups = {};
       markers.forEach(m => {
-        const icon = L.divIcon({
-          className: 'custom-pin-wrap',
-          html: '<div class="custom-pin" style="border-color:' + m.color + '; box-shadow: 0 0 12px ' + m.color + '55">' + getCategorySvg(m.category, m.color) + '</div>',
-          iconSize: [38, 38],
-          iconAnchor: [19, 19]
-        });
-
-        const marker = L.marker([m.lat, m.lng], { icon }).addTo(map);
-        
-        marker.bindPopup(
-          '<div class="popup-title">' + getCategorySvg(m.category, m.color) + '<span>' + m.label + '</span></div>' +
-          '<div class="popup-desc">' + m.desc + '</div>'
-        );
-
-        marker.on('click', () => {
-          sendToNative({ type: 'SELECT_INCIDENT', id: m.id });
-        });
+        const key = m.lat.toFixed(5) + ',' + m.lng.toFixed(5);
+        (groups[key] = groups[key] || []).push(m);
       });
+      const markerOf = {}; // id de aviso -> marcador que lo contiene
+
+      Object.keys(groups).forEach(key => {
+        const list = groups[key];
+        const first = list[0];
+        let marker;
+
+        if (list.length === 1) {
+          const icon = L.divIcon({
+            className: 'custom-pin-wrap',
+            html: '<div class="custom-pin" style="border-color:' + first.color + '; box-shadow: 0 0 12px ' + first.color + '55">' + getCategorySvg(first.category, first.color) + '</div>',
+            iconSize: [38, 38],
+            iconAnchor: [19, 19]
+          });
+          marker = L.marker([first.lat, first.lng], { icon }).addTo(map);
+          marker.bindPopup(
+            '<div class="popup-title">' + getCategorySvg(first.category, first.color) + '<span>' + esc(first.label) + '</span></div>' +
+            '<div class="popup-desc">' + esc(first.desc) + '</div>'
+          );
+          marker.on('click', () => {
+            sendToNative({ type: 'SELECT_INCIDENT', id: first.id });
+          });
+        } else {
+          // El color del grupo es el de su aviso más grave.
+          const worst = list.reduce((a, b) => (b.severity > a.severity ? b : a), first);
+          const icon = L.divIcon({
+            className: 'custom-pin-wrap',
+            html: '<div class="count-pin" style="background:' + worst.color + '">' + list.length + '</div>',
+            iconSize: [42, 42],
+            iconAnchor: [21, 21]
+          });
+          marker = L.marker([first.lat, first.lng], { icon }).addTo(map);
+          const rows = list.map(m =>
+            '<div class="group-row" data-id="' + esc(m.id) + '">' +
+              '<span class="group-ico" style="border-color:' + m.color + '">' + getCategorySvg(m.category, m.color) + '</span>' +
+              '<span class="group-txt"><b>' + esc(m.label) + '</b><br/>' + esc(m.desc.length > 70 ? m.desc.slice(0, 70) + '…' : m.desc) + '</span>' +
+              '<span class="group-go">Ver ›</span>' +
+            '</div>'
+          ).join('');
+          marker.bindPopup(
+            '<div class="popup-title">' + list.length + ' avisos en esta zona</div><div class="group-list">' + rows + '</div>',
+            { maxWidth: 260, minWidth: 220, autoPanPaddingTopLeft: [60, 60], autoPanPaddingBottomRight: [20, 20] }
+          );
+          marker.on('popupopen', (e) => {
+            const el = e.popup.getElement();
+            if (!el) return;
+            el.querySelectorAll('.group-row').forEach(row => {
+              row.addEventListener('click', () => {
+                sendToNative({ type: 'SELECT_INCIDENT', id: row.getAttribute('data-id') });
+              });
+            });
+          });
+        }
+        list.forEach(m => { markerOf[m.id] = marker; });
+      });
+
+      // Desde la lista de avisos: centrar el mapa en un aviso y abrir su ficha.
+      window.focusIncident = function(id) {
+        const mk = markerOf[id];
+        if (!mk) return;
+        map.flyTo(mk.getLatLng(), Math.max(map.getZoom(), 15), { duration: 0.6 });
+        setTimeout(() => mk.openPopup(), 700);
+      };
     } else {
       // Modo Selección: Marcador arrastrable para fijar la ubicación exacta
       let pickMarker = null;
@@ -495,37 +582,7 @@ export const OpenStreetMap: React.FC<Props> = ({
         const lat = data.lat;
         const lng = data.lng;
 
-        // Geocodificación inversa ligera con OpenStreetMap Nominatim
-        let address = `Zona [${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`,
-            {
-              headers: { 'User-Agent': 'RadioPatioApp/1.0' },
-            },
-          );
-          if (res.ok) {
-            const geo = await res.json();
-            const addr = geo.address;
-            if (addr) {
-              const street = addr.road || addr.pedestrian || addr.suburb || '';
-              const city = addr.city || addr.town || addr.village || '';
-              if (street) {
-                address = `${street}${city ? ', ' + city : ''}`;
-              }
-            }
-          }
-        } catch {
-          // Fallback a coordenadas
-        }
-
-        onPick({
-          gx: 5,
-          gy: 5,
-          lat,
-          lng,
-          address,
-        });
+        onPick({ gx: 5, gy: 5, lat, lng });
       }
     } catch (err) {
       console.warn('Error parsing WebView message:', err);
@@ -541,13 +598,42 @@ export const OpenStreetMap: React.FC<Props> = ({
       onTouchEnd={() => onFocusMap?.(false)}
       onTouchCancel={() => onFocusMap?.(false)}
     >
+      {/* Modo del mapa: dos opciones claras en una barra propia. Antes era un
+          botón flotante sobre el WebView, que en Android podía no recibir el toque. */}
+      <View style={styles.modeBar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: interactiveMode }}
+          accessibilityLabel="Mover el mapa con el dedo"
+          hitSlop={4}
+          onPress={() => setInteractiveMode(true)}
+          style={[styles.modeSeg, interactiveMode && styles.modeSegOn]}
+        >
+          <Text style={[styles.modeSegText, interactiveMode && styles.modeSegTextOn]}>✋ Mover mapa</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: !interactiveMode }}
+          accessibilityLabel="Bloquear el mapa para desplazar la página"
+          hitSlop={4}
+          onPress={() => {
+            setInteractiveMode(false);
+            onFocusMap?.(false);
+          }}
+          style={[styles.modeSeg, !interactiveMode && styles.modeSegOn]}
+        >
+          <Text style={[styles.modeSegText, !interactiveMode && styles.modeSegTextOn]}>↕ Desplazar página</Text>
+        </Pressable>
+      </View>
+
       {Platform.OS === 'web' ? (
         // Soporte Web
         <iframe
           srcDoc={leafletHtml}
           style={{
             width: '100%',
-            height: '100%',
+            flex: 1,
+            minHeight: 0,
             border: 'none',
             borderRadius: radius.lg,
             pointerEvents: interactiveMode ? 'auto' : 'none',
@@ -576,24 +662,6 @@ export const OpenStreetMap: React.FC<Props> = ({
           )}
         />
       )}
-
-      {/* Control flotante para alternar entre explorar el mapa con el dedo o hacer scroll por la página */}
-      <View style={styles.topRightControls}>
-        <Pressable
-          style={[styles.modeBtn, interactiveMode && styles.modeBtnActive]}
-          onPress={() => {
-            const next = !interactiveMode;
-            setInteractiveMode(next);
-            if (!next) {
-              onFocusMap?.(false);
-            }
-          }}
-        >
-          <Text style={styles.modeBtnText}>
-            {interactiveMode ? '✋ Mover mapa' : '🔒 Bloqueado'}
-          </Text>
-        </Pressable>
-      </View>
 
       {pickMode && (
         <View style={styles.pickBar}>
@@ -641,39 +709,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topRightControls: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 10,
+  modeBar: {
+    flexDirection: 'row',
+    gap: 6,
+    padding: 6,
+    backgroundColor: '#F1F5F9',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
-  modeBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 14,
+  modeSeg: {
+    flex: 1,
+    minHeight: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.line,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: 'transparent',
   },
-  modeBtnActive: {
+  modeSegOn: {
     backgroundColor: '#FFFFFF',
     borderColor: colors.primary,
   },
-  modeBtnText: {
-    color: colors.text,
-    fontSize: 11,
+  modeSegText: {
+    color: colors.textMuted,
+    fontSize: 12,
     fontWeight: '700',
+  },
+  modeSegTextOn: {
+    color: colors.text,
   },
   pickBar: {
     position: 'absolute',
-    top: 10,
+    top: 54,
     left: 10,
-    right: 80,
+    right: 10,
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 6,
