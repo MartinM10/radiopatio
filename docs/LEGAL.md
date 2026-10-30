@@ -60,9 +60,21 @@ Coordenadas y dispositivo en el backend actual:
 
 - El GPS se recoge con consentimiento y **no sale de la base de datos**: la
   API devuelve únicamente el centro de la celda hexagonal (~450 m). También
-  el `address` opcional es dato aportado por el vecino y depende del
-  cuidado en no identificar a terceros (el filtro de texto no lo excluye;
-  revisar en la EIPD — (*)).
+  el `address` opcional es dato aportado por el vecino: pasa el mismo
+  filtro de datos personales que la descripción y se le quita el número de
+  portal y la puerta (`server/src/lib/address.ts`); revisar en la EIPD — (*).
+- La calle se **sugiere** a partir del pin: el servidor (no el móvil) envía
+  las coordenadas, sin IP ni identificador, a OpenStreetMap Nominatim
+  (`server/src/lib/geocode.ts`; caché, 1 petición/s, nada se registra).
+  Es una comunicación de datos a un tercero y consta en la política de
+  privacidad y en la declaración de datos de Play. Se apaga con
+  `GEOCODER_ENABLED=0` o se sustituye por un Nominatim propio (`GEOCODER_URL`).
+  Además, el mapa carga las teselas de `tile.openstreetmap.org` y la
+  librería Leaflet de `unpkg.com`: ambos reciben la IP del vecino.
+- El **centro de celda** que publica la API es idéntico para todos los
+  puntos de una celda. Una versión anterior lo calculaba con la latitud del
+  punto y filtraba su posición norte-sur (~20 m); corregido y cubierto por
+  `server/src/tests/geo.test.ts`.
 - La identidad es un **token de dispositivo emitido por el servidor**, del
   que solo se guarda el hash; las escrituras sin token se rechazan. Las
   cuentas verificadas con Google guardan un **HMAC con secreto** del `sub`

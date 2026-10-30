@@ -184,7 +184,7 @@
 
   <div class="container content-box">
     <h1>Política de Privacidad</h1>
-    <div class="update-date">Última actualización: 28 de octubre de 2026 • En vigor en toda la Unión Europea</div>
+    <div class="update-date">Última actualización: 30 de octubre de 2026 • En vigor en toda la Unión Europea</div>
 
     <div class="highlight-card">
       <p><strong>En resumen:</strong> Radio Patio está diseñada bajo el principio de <em>Privacidad por Diseño</em> (RGPD art. 25). Para ver el mapa y los avisos <strong>no necesitas cuenta</strong>. Para publicar, confirmar o denunciar avisos te pedimos iniciar sesión con Google una sola vez, solo para comprobar que eres una persona real. <strong>No guardamos tu nombre, tu email ni tu foto, y ningún vecino ni moderador ve quién publica.</strong> Los demás usuarios solo ven el centro de una celda hexagonal de ~450 m, nunca tu posición exacta.</p>
@@ -200,7 +200,7 @@
       <li><strong>Identificador seudónimo de dispositivo:</strong> la API emite a tu dispositivo un token aleatorio. En el servidor solo guardamos un resumen unidireccional (SHA-256) del token y del identificador del dispositivo, combinado con una sal secreta. No permite conocer tu identidad civil.</li>
       <li><strong>Verificación de identidad con Google (solo para escribir):</strong> al publicar, confirmar o denunciar un aviso, la app abre el inicio de sesión de Google. Nuestro servidor recibe el token que Google emite, lo valida con Google y calcula, a partir del identificador de tu cuenta, un código irreversible (HMAC-SHA-256 con una clave secreta). <strong>Solo guardamos ese código</strong>, que sirve para que una misma cuenta no pueda manejar varios dispositivos y para limitar abusos. <strong>No guardamos tu nombre, tu email ni tu foto</strong>: el token se procesa en memoria y se descarta. Google actúa como proveedor de autenticación bajo sus propias condiciones y su política de privacidad.</li>
       <li><strong>Ubicación:</strong> con tu permiso, la aplicación utiliza el GPS para centrar el mapa y situar el aviso. Al publicar o consultar tu zona, la app envía tus coordenadas al servidor, que calcula la celda hexagonal (~450 m). <strong>La API solo devuelve el centro de la celda, nunca tus coordenadas exactas, ni siquiera al autor del aviso.</strong> Con fines antifraude (comprobar que estás en la zona del aviso y que no cambias de ciudad de forma imposible) el servidor conserva las coordenadas recibidas durante un máximo de 72 horas y después las elimina. Ningún usuario tiene acceso a ellas.</li>
-      <li><strong>Contenido de los avisos:</strong> categoría de la incidencia y descripción textual aportada voluntariamente y, si la proporcionas, una referencia de calle. La aplicación cuenta con filtros automáticos para impedir nombres propios, datos bancarios o información que permita identificar a personas físicas.</li>
+      <li><strong>Contenido de los avisos:</strong> categoría de la incidencia y descripción textual aportada voluntariamente y, si quieres, la calle: la aplicación te propone la que corresponde al punto marcado y puedes corregirla, escribirla a mano o borrarla. <strong>Nunca se publica el número de portal ni la puerta</strong>, y la zona se muestra siempre aproximada (~450 m). La aplicación cuenta con filtros automáticos para impedir nombres propios, datos bancarios o información que permita identificar a personas físicas.</li>
     </ul>
 
     <h2>3. Datos que NUNCA recopilamos</h2>
@@ -229,7 +229,13 @@
     </ul>
 
     <h2>6. Destinatarios y Transferencias Internacionales</h2>
-    <p>Los datos técnicos del servicio se alojan en servidores situados dentro del Espacio Económico Europeo (UE). El único tercero que interviene es <strong>Google</strong>, como proveedor del inicio de sesión (el servidor consulta a Google para validar el token). No se ceden datos a empresas de publicidad, corredores de datos ni plataformas comerciales.</p>
+    <p>Los datos técnicos del servicio se alojan en servidores situados dentro del Espacio Económico Europeo (UE). Para funcionar, la aplicación recurre a estos terceros, que pueden tratar datos fuera del Espacio Económico Europeo:</p>
+    <ul>
+      <li><strong>Google:</strong> proveedor del inicio de sesión. El servidor consulta a Google para validar el token de tu cuenta.</li>
+      <li><strong>OpenStreetMap</strong> (OpenStreetMap Foundation): al ver el mapa, tu dispositivo descarga las imágenes del mapa de sus servidores, por lo que reciben tu dirección IP y la zona que estás viendo. Además, para sugerirte la calle cuando fijas un punto, <strong>nuestro servidor</strong> envía las coordenadas de ese punto (sin tu dirección IP ni ningún identificador tuyo) a su servicio de búsqueda de direcciones (Nominatim) y recibe la calle y el municipio. Puedes ignorar la sugerencia y escribir la calle a mano o dejarla en blanco.</li>
+      <li><strong>unpkg.com</strong> (red de distribución de contenidos): la aplicación descarga desde allí la librería con la que se dibuja el mapa, por lo que ese servicio recibe tu dirección IP.</li>
+    </ul>
+    <p>No se ceden datos a empresas de publicidad, corredores de datos ni plataformas comerciales.</p>
 
     <h2 id="derechos">7. Derechos de los Usuarios (RGPD)</h2>
     <p>En virtud de los artículos 15 a 22 del RGPD y de la Ley Orgánica 3/2018 (LOPDGDD), tienes derecho a solicitar el acceso, rectificación o supresión de la información asociada a tu identificador de dispositivo, así como la limitación u oposición a su tratamiento.</p>
