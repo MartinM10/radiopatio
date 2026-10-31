@@ -16,6 +16,12 @@ export type AppIconName =
   | 'clock'
   | 'bell'
   | 'search'
+  | 'filter'
+  | 'locate'
+  | 'chevron-left'
+  | 'chevron-right'
+  | 'chevron-down'
+  | 'trash'
   | 'x';
 
 interface Props {
@@ -134,6 +140,37 @@ export const AppIcon: React.FC<Props> = ({
         <>
           <Circle cx="11" cy="11" r="7" {...p} />
           <Line x1="21" y1="21" x2="16.65" y2="16.65" {...p} />
+        </>
+      )}
+
+      {name === 'filter' && (
+        <>
+          <Line x1="4" y1="7" x2="20" y2="7" {...p} />
+          <Line x1="7" y1="12" x2="17" y2="12" {...p} />
+          <Line x1="10" y1="17" x2="14" y2="17" {...p} />
+        </>
+      )}
+
+      {name === 'locate' && (
+        <>
+          <Circle cx="12" cy="12" r="3.2" {...p} />
+          <Circle cx="12" cy="12" r="7.5" {...p} />
+          <Line x1="12" y1="1.5" x2="12" y2="4.5" {...p} />
+          <Line x1="12" y1="19.5" x2="12" y2="22.5" {...p} />
+          <Line x1="1.5" y1="12" x2="4.5" y2="12" {...p} />
+          <Line x1="19.5" y1="12" x2="22.5" y2="12" {...p} />
+        </>
+      )}
+
+      {name === 'chevron-left' && <Path d="M15 5l-7 7 7 7" {...p} />}
+      {name === 'chevron-right' && <Path d="M9 5l7 7-7 7" {...p} />}
+      {name === 'chevron-down' && <Path d="M5 9l7 7 7-7" {...p} />}
+
+      {name === 'trash' && (
+        <>
+          <Path d="M3 6h18" {...p} />
+          <Path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" {...p} />
+          <Path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" {...p} />
         </>
       )}
 

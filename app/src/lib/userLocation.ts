@@ -21,9 +21,15 @@ export async function getUserLocation(force = false): Promise<UserLoc | null> {
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') return null;
-    const pos = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
+    // La última posición conocida llega al instante; solo si no hay (o es muy
+    // antigua) se espera un GPS nuevo, con tope de tiempo para no dejar colgada la pantalla.
+    const last = await Location.getLastKnownPositionAsync({ maxAge: 10 * 60_000 }).catch(() => null);
+    const pos =
+      last ??
+      (await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 12_000)),
+      ]));
     cached = {
       lat: Number(pos.coords.latitude.toFixed(5)),
       lng: Number(pos.coords.longitude.toFixed(5)),

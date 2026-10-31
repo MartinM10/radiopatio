@@ -1,34 +1,57 @@
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActiveFilters } from '../components/ActiveFilters';
 import { AppIcon } from '../components/AppIcon';
-import { CategoryIcon } from '../components/CategoryIcon';
-import { IncidentCard } from '../components/IncidentCard';
-import { OpenStreetMap } from '../components/OpenStreetMap';
-import { categories, categoryById } from '../data/categories';
-import { CategoryId } from '../data/types';
+import { FilterSheet } from '../components/FilterSheet';
+import { IncidentRow } from '../components/IncidentRow';
+import { MapHex, MapView, MapViewHandle, SPAIN_VIEW } from '../components/MapView';
+import { categoryById } from '../data/categories';
 import { haversineMeters } from '../data/places';
+import { CategoryId, Incident } from '../data/types';
 import { trustWeight } from '../lib/dataQuality';
+import {
+  TIMEFRAME_PHRASE,
+  Timeframe,
+  countByCategory,
+  filterByCategories,
+  inTimeframe,
+  toggleCategory,
+} from '../lib/filters';
+import { buildHexGridForIncidents } from '../lib/hexgrid';
+import { clusterIncidents, clusterOf } from '../lib/mapData';
 import { NEARBY_RADIUS_M, getUserLocation } from '../lib/userLocation';
 import { useIncidents } from '../store';
 import { colors, radius } from '../theme';
-import { areaName } from '../data/neighborhood';
 
 interface HomeProps {
-  /** Aviso a centrar al abrir (desde «Ver en el mapa» en la lista de avisos). */
+  /** Aviso a centrar en el mapa (desde «Ver en el mapa»); cambia `focusNonce` en cada petición. */
   focusId?: string | null;
   focusNonce?: number;
+  onOpenIncident: (id: string) => void;
 }
 
-export const HomeScreen = ({ focusId = null, focusNonce = 0 }: HomeProps) => {
-  const { incidents } = useIncidents();
-  const [filter, setFilter] = useState<CategoryId | 'all'>('all');
-  const [selected, setSelected] = useState<string | null>(focusId);
-  // Con un aviso concreto se amplía el periodo para que siempre aparezca.
-  const [timeframe, setTimeframe] = useState<'24h' | 'week' | 'month'>(focusId ? 'month' : 'week');
-  const [mapFocused, setMapFocused] = useState(false);
-  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+interface Selection {
+  key: string;
+  ids: string[];
+}
 
+const EMPTY: string[] = [];
+
+export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident }: HomeProps) => {
+  const { incidents } = useIncidents();
+  const { height } = useWindowDimensions();
+  const mapRef = useRef<MapViewHandle>(null);
+
+  const [timeframe, setTimeframe] = useState<Timeframe>('week');
+  const [cats, setCats] = useState<CategoryId[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [pendingFocus, setPendingFocus] = useState<string | null>(null);
+  const centered = useRef(false);
+
+  // Ubicación del vecino, si ya concedió el permiso (sin diálogos sorpresa más allá del primero).
   useEffect(() => {
     let cancelled = false;
     getUserLocation().then((loc) => {
@@ -39,342 +62,294 @@ export const HomeScreen = ({ focusId = null, focusNonce = 0 }: HomeProps) => {
     };
   }, []);
 
-  const timeframeLimitMs = useMemo(() => {
-    if (timeframe === '24h') return 24 * 3_600_000;
-    if (timeframe === 'week') return 7 * 24 * 3_600_000;
-    return 30 * 24 * 3_600_000; // 30 días
-  }, [timeframe]);
-
-  const visible = useMemo(
-    () => incidents.filter((i) => Date.now() - i.createdAt < timeframeLimitMs && !i.flaggedByMe),
-    [incidents, timeframeLimitMs],
+  // ── Datos derivados ───────────────────────────────────────────────────────
+  const periodList = useMemo(
+    () => incidents.filter((i) => inTimeframe(i, timeframe) && !i.flaggedByMe),
+    [incidents, timeframe],
+  );
+  const counts = useMemo(() => countByCategory(periodList), [periodList]);
+  const filtered = useMemo(() => filterByCategories(periodList, cats), [periodList, cats]);
+  const clusters = useMemo(() => clusterIncidents(filtered), [filtered]);
+  const hexes = useMemo<MapHex[]>(
+    () =>
+      buildHexGridForIncidents(filtered, true).map((h) => ({
+        key: h.id,
+        polygon: h.polygon,
+        color: h.color,
+        count: h.incidentCount,
+        ids: h.incidents.map((i) => i.id),
+      })),
+    [filtered],
   );
 
-  const filtered = useMemo(
-    () => (filter === 'all' ? visible : visible.filter((i) => i.category === filter)),
-    [visible, filter],
+  const byId = useMemo(() => new Map(filtered.map((i) => [i.id, i])), [filtered]);
+  // La selección sobrevive a los refrescos, pero solo con los avisos que siguen visibles.
+  const selectedIncidents = useMemo<Incident[]>(
+    () => (selection ? selection.ids.map((id) => byId.get(id)).filter((i): i is Incident => !!i) : []),
+    [selection, byId],
   );
+  const highlightIds = selectedIncidents.length > 0 ? selectedIncidents.map((i) => i.id) : EMPTY;
 
-  const selectedIncident = filtered.find((i) => i.id === selected) ?? null;
-
-  const nearbyInPeriod = useMemo(
+  // ── Nivel de la zona ──────────────────────────────────────────────────────
+  const nearby = useMemo(
     () =>
       userLoc
-        ? visible.filter((i) => {
-            const lat = i.zone.lat ?? 0;
-            const lng = i.zone.lng ?? 0;
-            if (!lat && !lng) return false; // aviso heredado sin coordenadas
-            return haversineMeters(userLoc, { lat, lng }) <= NEARBY_RADIUS_M;
+        ? filtered.filter((i) => {
+            if (i.zone.lat == null || i.zone.lng == null) return false;
+            return haversineMeters(userLoc, { lat: i.zone.lat, lng: i.zone.lng }) <= NEARBY_RADIUS_M;
           })
         : [],
-    [visible, userLoc],
+    [filtered, userLoc],
   );
+  // Veracidad (TRUST.md): los avisos sin confirmar pesan la mitad.
+  const score = nearby.reduce((s, i) => s + categoryById(i.category).severity * trustWeight(i), 0);
+  const phrase = TIMEFRAME_PHRASE[timeframe];
+  const plural = (n: number) => (n === 1 ? 'aviso' : 'avisos');
+  const level = !userLoc
+    ? { label: 'Activa tu ubicación', color: colors.accent, text: `${filtered.length} ${plural(filtered.length)} ${phrase} en el mapa` }
+    : score < 4
+      ? { label: 'Tranquilo', color: colors.ok, text: `${nearby.length} ${plural(nearby.length)} ${phrase} cerca de ti` }
+      : score < 9
+        ? { label: 'Atención', color: colors.warn, text: `${nearby.length} ${plural(nearby.length)} ${phrase} cerca de ti` }
+        : { label: 'Alerta vecinal', color: colors.danger, text: `${nearby.length} ${plural(nearby.length)} ${phrase} cerca de ti` };
 
-  // Veracidad (TRUST.md): los avisos sin confirmar por vecinos pesan la
-  // mitad: un único aviso aislado sin verificar no dispara la alerta solo.
-  const score = nearbyInPeriod.reduce(
-    (s, i) => s + categoryById(i.category).severity * trustWeight(i),
-    0,
-  );
-  const periodText = timeframe === 'week' ? 'esta semana' : timeframe === 'month' ? 'este mes' : 'hoy';
-  const nearText = userLoc ? areaName({ gx: 5, gy: 5, lat: userLoc.lat, lng: userLoc.lng }) : 'cerca de ti';
-  const level =
-    !userLoc
-      ? {
-          label: 'Ubicación desactivada',
-          color: colors.accent,
-          text: 'Toca para activar GPS y calcular el nivel de riesgo de tu calle.',
-        }
-      : score < 4
-        ? { label: 'Tranquilo', color: colors.ok, text: `Zona en calma ${periodText} (${nearText}).` }
-        : score < 9
-          ? { label: 'Atención', color: colors.warn, text: `Incidencias registradas ${periodText} (${nearText}).` }
-          : { label: 'Alerta vecinal', color: colors.danger, text: `Delincuencia activa en tu entorno ${periodText} (${nearText}).` };
+  // ── Mapa: primera vista ───────────────────────────────────────────────────
+  // Una sola vez: al conocer la ubicación, o (sin ella) al llegar los primeros avisos.
+  useEffect(() => {
+    if (centered.current || focusId) return;
+    if (userLoc) {
+      centered.current = true;
+      mapRef.current?.flyTo(userLoc.lat, userLoc.lng, 14);
+    } else if (clusters.length > 0) {
+      centered.current = true;
+      mapRef.current?.flyTo(clusters[0].lat, clusters[0].lng, 12);
+    }
+  }, [userLoc, clusters, focusId]);
 
-  const onSelectTimeframe = (tf: '24h' | 'week' | 'month') => {
-    setTimeframe(tf);
+  const locate = useCallback(async () => {
     Haptics.selectionAsync().catch(() => {});
-  };
+    const loc = await getUserLocation(true);
+    if (loc) {
+      setUserLoc(loc);
+      centered.current = true;
+      mapRef.current?.flyTo(loc.lat, loc.lng, 15);
+    } else {
+      Alert.alert(
+        'No se pudo obtener tu ubicación',
+        'Comprueba que la ubicación del móvil está activada y que Radio Patio tiene permiso en los ajustes. Mientras tanto puedes mover el mapa a mano.',
+      );
+    }
+  }, []);
+
+  // ── Venir desde «Ver en el mapa» ──────────────────────────────────────────
+  useEffect(() => {
+    if (!focusId) return;
+    centered.current = true;
+    // El aviso debe verse: se amplía el periodo y se quitan los filtros que lo ocultarían.
+    setTimeframe('month');
+    setCats([]);
+    setPendingFocus(focusId);
+  }, [focusId, focusNonce]);
+
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const c = clusterOf(clusters, pendingFocus);
+    if (!c) return; // aún no están los datos (o el aviso ya no existe)
+    setSelection({ key: c.key, ids: c.ids });
+    mapRef.current?.flyTo(c.lat, c.lng, 16);
+    setPendingFocus(null);
+  }, [pendingFocus, clusters]);
+
+  const onSelect = useCallback((key: string | null, ids: string[]) => {
+    if (!key || ids.length === 0) {
+      setSelection(null);
+      return;
+    }
+    Haptics.selectionAsync().catch(() => {});
+    setSelection({ key, ids });
+  }, []);
+
+  const filterCount = cats.length;
+  const panelMax = Math.round(height * 0.3);
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      scrollEnabled={!mapFocused}
-    >
-      <Text style={styles.hello}>Mapa Vecinal</Text>
-      <Text style={styles.sub}>Rejilla de delincuencia e incidencias por zonas</Text>
+    <View style={styles.root}>
+      <View style={styles.header}>
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Mapa vecinal</Text>
+            <Pressable
+              onPress={userLoc ? undefined : locate}
+              disabled={!!userLoc}
+              accessibilityRole={userLoc ? 'text' : 'button'}
+              style={styles.levelLine}
+            >
+              <View style={[styles.levelDot, { backgroundColor: level.color }]} />
+              <Text style={[styles.levelLabel, { color: level.color }]}>{level.label}</Text>
+              <Text style={styles.levelText} numberOfLines={1}>
+                · {level.text}
+              </Text>
+            </Pressable>
+          </View>
 
-      {/* Selector de periodo temporal */}
-      <View style={styles.timeframeRow}>
-        <Text style={styles.tfLabel}>Periodo:</Text>
-        <View style={styles.tfPills}>
           <Pressable
-            style={({ pressed }) => [
-              styles.tfBtn,
-              timeframe === '24h' && styles.tfBtnActive,
-              pressed && { opacity: 0.8 },
-            ]}
-            onPress={() => onSelectTimeframe('24h')}
+            onPress={locate}
+            accessibilityRole="button"
+            accessibilityLabel="Centrar el mapa en mi ubicación"
+            style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.8 }]}
           >
-            <Text style={[styles.tfBtnText, timeframe === '24h' && styles.tfBtnTextActive]}>24 h</Text>
+            <AppIcon name="locate" color={colors.text} size={20} />
           </Pressable>
+
           <Pressable
-            style={({ pressed }) => [
-              styles.tfBtn,
-              timeframe === 'week' && styles.tfBtnActive,
-              pressed && { opacity: 0.8 },
-            ]}
-            onPress={() => onSelectTimeframe('week')}
+            onPress={() => setFiltersOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={filterCount > 0 ? `Filtros, ${filterCount} activos` : 'Filtros'}
+            style={({ pressed }) => [styles.filterBtn, filterCount > 0 && styles.filterBtnOn, pressed && { opacity: 0.85 }]}
           >
-            <Text style={[styles.tfBtnText, timeframe === 'week' && styles.tfBtnTextActive]}>Semana</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.tfBtn,
-              timeframe === 'month' && styles.tfBtnActive,
-              pressed && { opacity: 0.8 },
-            ]}
-            onPress={() => onSelectTimeframe('month')}
-          >
-            <Text style={[styles.tfBtnText, timeframe === 'month' && styles.tfBtnTextActive]}>Mes</Text>
+            <AppIcon name="filter" color={filterCount > 0 ? '#fff' : colors.text} size={18} />
+            <Text style={[styles.filterText, filterCount > 0 && { color: '#fff' }]}>
+              {filterCount > 0 ? `Filtros · ${filterCount}` : 'Filtros'}
+            </Text>
           </Pressable>
         </View>
+
+        <ActiveFilters
+          selected={cats}
+          onRemove={(id) => setCats((c) => toggleCategory(c, id))}
+          onClear={() => setCats([])}
+        />
       </View>
 
-      {/* Resumen del nivel de alerta */}
-      <Pressable
-        onPress={() => {
-          if (!userLoc) {
-            getUserLocation(true).then((loc) => {
-              if (loc) {
-                setUserLoc(loc);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-              }
-            });
-          }
-        }}
-        style={({ pressed }) => [
-          styles.levelCard,
-          { borderColor: level.color + '55' },
-          !userLoc && pressed && { opacity: 0.8, transform: [{ scale: 0.99 }] },
-        ]}
-      >
-        <View style={[styles.levelIconBadge, { backgroundColor: level.color + '20', borderColor: level.color + '45' }]}>
-          <AppIcon
-            name={!userLoc ? 'map-pin' : score >= 9 ? 'shield-alert' : 'shield-check'}
-            color={level.color}
-            size={20}
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.levelTitle, { color: level.color }]}>{level.label}</Text>
-          <Text style={styles.levelText}>{level.text}</Text>
-        </View>
-        <View style={styles.count}>
-          <Text style={styles.countNum}>{nearbyInPeriod.length}</Text>
-          <Text style={styles.countLbl}>{timeframe === 'week' ? 'en 7 días' : timeframe === 'month' ? 'en 30 días' : 'en 24 h'}</Text>
-        </View>
-      </Pressable>
-
-      {/* Filtros de categoría */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <Chip id="all" label="Todo" active={filter === 'all'} onPress={() => setFilter('all')} />
-        {categories.map((c) => (
-          <Chip
-            key={c.id}
-            id={c.id}
-            label={c.label}
-            active={filter === c.id}
-            onPress={() => setFilter(c.id)}
-          />
-        ))}
-      </ScrollView>
-
-      {/* Mapa realista OpenStreetMap con polígonos de barrios y marcadores */}
-      <OpenStreetMap
-        incidents={filtered}
-        selectedId={selected}
-        onSelect={setSelected}
-        height={360}
-        showNeighborhoods={true}
-        onFocusMap={setMapFocused}
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        clusters={clusters}
+        hexes={hexes}
+        highlightIds={highlightIds}
         userLocation={userLoc}
-        focusId={focusId}
-        focusNonce={focusNonce}
+        initialView={SPAIN_VIEW}
+        onSelect={onSelect}
       />
 
-      {/* Leyenda de delincuencia por sectores hexagonales */}
-      <View style={styles.legendContainer}>
-        <Text style={styles.legendTitle}>Nivel de delincuencia por sector ({timeframe === 'week' ? 'semana' : timeframe === 'month' ? 'mes' : '24h'}):</Text>
-        <View style={styles.legendItems}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#22C55E' }]} />
-            <Text style={styles.legendLabel}>Tranquilo</Text>
+      <View style={styles.panel}>
+        {selectedIncidents.length > 0 ? (
+          <>
+            <View style={styles.panelHead}>
+              <Text style={styles.panelTitle}>
+                {selectedIncidents.length === 1 ? '1 aviso en esta zona' : `${selectedIncidents.length} avisos en esta zona`}
+              </Text>
+              <Pressable
+                onPress={() => setSelection(null)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar la lista de avisos"
+                style={styles.panelClose}
+              >
+                <AppIcon name="x" color={colors.muted} size={16} />
+              </Pressable>
+            </View>
+            <ScrollView style={{ maxHeight: panelMax }} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+              {selectedIncidents.map((i) => (
+                <IncidentRow key={i.id} incident={i} onOpen={onOpenIncident} highlighted={i.id === focusId} />
+              ))}
+            </ScrollView>
+          </>
+        ) : filtered.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>
+              {cats.length > 0 ? 'Ningún aviso con estos filtros' : `Sin avisos ${phrase}`}
+            </Text>
+            <Pressable
+              onPress={() => {
+                if (cats.length > 0) setCats([]);
+                else setTimeframe('month');
+              }}
+              accessibilityRole="button"
+              hitSlop={8}
+            >
+              <Text style={styles.emptyAction}>{cats.length > 0 ? 'Quitar filtros' : 'Ver el último mes'}</Text>
+            </Pressable>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#EAB308' }]} />
-            <Text style={styles.legendLabel}>Moderado</Text>
+        ) : (
+          <View style={styles.hint}>
+            <Text style={styles.hintText}>Toca un círculo o una zona para ver sus avisos</Text>
+            <View style={styles.legend}>
+              {[
+                ['Tranquilo', '#22C55E'],
+                ['Moderado', '#EAB308'],
+                ['Atención', '#F97316'],
+                ['Alerta', '#EF4444'],
+              ].map(([label, color]) => (
+                <View key={label} style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: color }]} />
+                  <Text style={styles.legendLabel}>{label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#F97316' }]} />
-            <Text style={styles.legendLabel}>Atención</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-            <Text style={styles.legendLabel}>Alerta</Text>
-          </View>
-        </View>
+        )}
       </View>
 
-      {selectedIncident ? (
-        <IncidentCard incident={selectedIncident} />
-      ) : (
-        <Text style={styles.tip}>Toca un hexágono para ver los detalles del sector o un marcador para ver el aviso concreto.</Text>
-      )}
-    </ScrollView>
+      <FilterSheet
+        visible={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        selected={cats}
+        onChange={setCats}
+        counts={counts}
+        resultCount={filtered.length}
+        timeframe={timeframe}
+        onTimeframe={setTimeframe}
+      />
+    </View>
   );
 };
 
-const Chip = ({
-  id,
-  label,
-  active,
-  onPress,
-}: {
-  id: CategoryId | 'all';
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) => (
-  <Pressable
-    onPress={() => {
-      Haptics.selectionAsync().catch(() => {});
-      onPress();
-    }}
-    accessibilityRole="button"
-    accessibilityLabel={`Filtrar por ${label}`}
-    style={({ pressed }) => [
-      styles.chip,
-      active && styles.chipOn,
-      pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
-    ]}
-  >
-    <CategoryIcon id={id} color={active ? '#fff' : colors.muted} size={14} strokeWidth={2.2} />
-    <Text style={[styles.chipText, active && { color: '#fff' }]}>{label}</Text>
-  </Pressable>
-);
-
 const styles = StyleSheet.create({
-  content: { padding: 20, paddingBottom: 40, gap: 14 },
-  hello: { color: colors.text, fontSize: 30, fontWeight: '800' },
-  sub: { color: colors.muted, fontSize: 14, marginTop: -10 },
-  timeframeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  root: { flex: 1, backgroundColor: colors.bg },
+  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, gap: 8 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
+  levelLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, minHeight: 20 },
+  levelDot: { width: 9, height: 9, borderRadius: 5 },
+  levelLabel: { fontSize: 13, fontWeight: '800' },
+  levelText: { flex: 1, color: colors.muted, fontSize: 13 },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.surface,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
-  },
-  tfLabel: {
-    color: colors.muted,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  tfPills: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  tfBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface2,
-  },
-  tfBtnActive: {
-    backgroundColor: colors.primary,
-  },
-  tfBtnText: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  tfBtnTextActive: {
-    color: '#FFFFFF',
-  },
-  levelCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    padding: 16,
-  },
-  levelIconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  levelDot: { width: 12, height: 12, borderRadius: 6 },
-  levelTitle: { fontSize: 17, fontWeight: '800' },
-  levelText: { color: colors.muted, fontSize: 13, marginTop: 2 },
-  count: { alignItems: 'center' },
-  countNum: { color: colors.text, fontSize: 26, fontWeight: '800' },
-  countLbl: { color: colors.muted, fontSize: 10, fontWeight: '600' },
-  chips: { gap: 8, paddingRight: 20 },
-  chip: {
+  filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
+    height: 44,
+    paddingHorizontal: 14,
+    borderRadius: 22,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: radius.pill,
-    paddingHorizontal: 13,
-    paddingVertical: 8,
   },
-  chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.muted, fontSize: 13, fontWeight: '700' },
-  legendContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: 12,
-    gap: 8,
-  },
-  legendTitle: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  legendItems: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendLabel: {
-    color: colors.text,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  tip: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', paddingHorizontal: 8 },
+  filterBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterText: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  map: { flex: 1, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.line },
+  panel: { backgroundColor: colors.bg, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, minHeight: 64 },
+  panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  panelTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  panelClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
+  list: { gap: 8, paddingBottom: 4 },
+  hint: { gap: 8, alignItems: 'center' },
+  hintText: { color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  legend: { flexDirection: 'row', gap: 14, flexWrap: 'wrap', justifyContent: 'center' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendDot: { width: 9, height: 9, borderRadius: 5 },
+  legendLabel: { color: colors.muted, fontSize: 11, fontWeight: '700' },
+  empty: { alignItems: 'center', gap: 6, paddingVertical: 4 },
+  emptyTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  emptyAction: { color: colors.accent, fontSize: 13, fontWeight: '800' },
 });

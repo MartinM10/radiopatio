@@ -16,11 +16,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '../components/AppIcon';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { useIdentity } from '../components/IdentityGate';
-import { OpenStreetMap } from '../components/OpenStreetMap';
+import { LocationPicker } from '../components/LocationPicker';
 import { categories, categoryById } from '../data/categories';
 import { CategoryId, Zone } from '../data/types';
 import { MAX_ADDRESS, sanitizeAddress } from '../lib/address';
 import { apiReverseGeocode } from '../lib/api';
+import { getUserLocation } from '../lib/userLocation';
 import { checkText } from '../lib/privacy';
 import { useIncidents } from '../store';
 import { colors, radius, severityColor } from '../theme';
@@ -38,7 +39,8 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
   const [zone, setZone] = useState<Zone | null>(null);
   const [text, setText] = useState('');
   const [ack, setAck] = useState(false);
-  const [mapFocused, setMapFocused] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [locating, setLocating] = useState(false);
   // Calle (opcional): llega sugerida a partir del pin y el vecino puede
   // corregirla, escribirla a mano o borrarla.
   const [street, setStreet] = useState('');
@@ -50,26 +52,33 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
     return categories.filter((c) => (c.group ?? 'general') === activeTab || (activeTab === 'servicios' && c.group === 'general'));
   }, [activeTab]);
 
-  // Sugerir la calle del pin. La consulta la hace el servidor; si falla o no hay
-  // calle, el campo queda para escribirla a mano. Lo que el vecino haya escrito
-  // o corregido no se pisa.
-  useEffect(() => {
-    if (zone?.lat == null || zone?.lng == null) return;
-    const { lat, lng } = zone;
-    let cancelled = false;
+  const applyPoint = (point: { lat: number; lng: number }, suggestion: string | null) => {
+    setZone({ gx: 5, gy: 5, lat: point.lat, lng: point.lng });
+    // Lo que el vecino haya escrito o corregido a mano no se pisa.
+    if (!streetTouched.current) setStreet(suggestion ?? '');
+  };
+
+  const onPicked = (point: { lat: number; lng: number }, suggestion: string | null) => {
+    applyPoint(point, suggestion);
+    setPickerOpen(false);
+    Haptics.selectionAsync().catch(() => {});
+  };
+
+  /** Atajo: usa la ubicación del móvil sin pasar por el mapa. Sin permiso, abre el mapa. */
+  const fromMyLocation = async () => {
+    setLocating(true);
+    const loc = await getUserLocation(true);
+    if (!loc) {
+      setLocating(false);
+      setPickerOpen(true);
+      return;
+    }
     setSuggesting(true);
-    const timer = setTimeout(async () => {
-      const suggestion = await apiReverseGeocode(lat, lng);
-      if (cancelled) return;
-      setSuggesting(false);
-      if (!streetTouched.current) setStreet(suggestion?.label ?? '');
-    }, 700);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      setSuggesting(false);
-    };
-  }, [zone?.lat, zone?.lng]);
+    const s = await apiReverseGeocode(loc.lat, loc.lng);
+    applyPoint(loc, s?.label ?? null);
+    setSuggesting(false);
+    setLocating(false);
+  };
 
   const problem = text.length >= 3 ? checkText(text) : null;
   const streetProblem = street.length >= 3 ? checkText(street) : null;
@@ -187,28 +196,44 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          scrollEnabled={!mapFocused}
         >
           <View style={styles.selCat}>
             <CategoryIcon id={cat} color={colors.primary} size={20} />
             <Text style={styles.selCatText}>{categoryById(cat).label}</Text>
           </View>
 
-          <Text style={styles.q}>¿Dónde ocurrió? <Text style={styles.qSub}>(calle o zona)</Text></Text>
-          <OpenStreetMap
-            incidents={incidents.filter((i) => !i.flaggedByMe)}
-            pickMode
-            picked={zone}
-            onPick={setZone}
-            height={290}
-            onFocusMap={setMapFocused}
-          />
-          {zone && (
+          <Text style={styles.q}>¿Dónde ocurrió?</Text>
+          {!zone ? (
+            <View style={styles.locCard}>
+              <Text style={styles.locText}>Marca el lugar en el mapa. La zona se mostrará aproximada (~450 m); tu posición exacta nunca se publica.</Text>
+              <Pressable
+                onPress={() => setPickerOpen(true)}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.locPrimary, pressed && { opacity: 0.85 }]}
+              >
+                <AppIcon name="map-pin" color="#fff" size={18} />
+                <Text style={styles.locPrimaryText}>Marcar en el mapa</Text>
+              </Pressable>
+              <Pressable
+                onPress={fromMyLocation}
+                disabled={locating}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.locSecondary, pressed && { opacity: 0.85 }]}
+              >
+                {locating ? <ActivityIndicator size="small" color={colors.primary} /> : <AppIcon name="locate" color={colors.text} size={18} />}
+                <Text style={styles.locSecondaryText}>Usar mi ubicación</Text>
+              </Pressable>
+            </View>
+          ) : (
             <View style={styles.streetBox}>
-              <View style={styles.zoneRow}>
-                <AppIcon name="map-pin" color={colors.accent} size={15} />
-                <Text style={styles.zoneText}>Calle (opcional) · la zona se muestra aproximada (~450 m)</Text>
+              <View style={styles.locDone}>
+                <AppIcon name="check" color={colors.ok} size={16} strokeWidth={2.6} />
+                <Text style={styles.locDoneText}>Ubicación marcada · zona aproximada (~450 m)</Text>
+                <Pressable onPress={() => setPickerOpen(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cambiar la ubicación">
+                  <Text style={styles.locChange}>Cambiar</Text>
+                </Pressable>
               </View>
+              <Text style={styles.streetLabel}>Calle (opcional)</Text>
               <View style={styles.streetInputRow}>
                 <TextInput
                   value={street}
@@ -226,7 +251,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
               </View>
               <Text style={[styles.streetHint, streetProblem ? { color: colors.danger } : null]}>
                 {streetProblem ??
-                  'Sugerida a partir del pin: corrígela si no es exacta o bórrala si prefieres no indicarla. Sin número de portal.'}
+                  'Sugerida a partir del punto: corrígela si no es exacta o bórrala si prefieres no indicarla. Sin número de portal.'}
               </Text>
             </View>
           )}
@@ -308,6 +333,17 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
           </Pressable>
         </View>
       )}
+
+      <LocationPicker
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onConfirm={onPicked}
+        initial={zone?.lat != null && zone?.lng != null ? { lat: zone.lat, lng: zone.lng } : null}
+        fallback={(() => {
+          const z = incidents.find((i) => i.zone.lat != null && i.zone.lng != null)?.zone;
+          return z?.lat != null && z?.lng != null ? { lat: z.lat, lng: z.lng } : null;
+        })()}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -387,6 +423,16 @@ const styles = StyleSheet.create({
   tileHint: { color: colors.muted, fontSize: 11, lineHeight: 15 },
   selCat: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.line },
   selCatText: { color: colors.text, fontWeight: '800', fontSize: 13 },
+  locCard: { gap: 10, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 16 },
+  locText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  locPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: radius.pill, backgroundColor: colors.primary },
+  locPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  locSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 48, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.surface },
+  locSecondaryText: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  locDone: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  locDoneText: { flex: 1, color: colors.muted, fontSize: 12, fontWeight: '600' },
+  locChange: { color: colors.accent, fontSize: 13, fontWeight: '800' },
+  streetLabel: { color: colors.text, fontSize: 14, fontWeight: '800' },
   streetBox: { gap: 8 },
   streetInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   streetInput: {

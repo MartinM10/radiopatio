@@ -16,13 +16,17 @@ import { CategoryIcon } from './CategoryIcon';
 interface Props {
   incident: Incident;
   compact?: boolean;
+  /** Si se pasa, tocar la tarjeta abre el detalle del aviso. */
+  onOpen?: (id: string) => void;
   /** Si se pasa, la tarjeta ofrece «Ver en el mapa». */
   onShowOnMap?: (id: string) => void;
+  /** «450 m»: se muestra junto a la zona cuando la lista está ordenada por cercanía. */
+  distanceText?: string | null;
 }
 
 const tap = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
-export const IncidentCard = ({ incident, compact, onShowOnMap }: Props) => {
+export const IncidentCard = ({ incident, compact, onOpen, onShowOnMap, distanceText }: Props) => {
   const { confirm, flag, isConfirmed } = useIncidents();
   const { requireIdentity } = useIdentity();
   const cat = categoryById(incident.category);
@@ -44,7 +48,13 @@ export const IncidentCard = ({ incident, compact, onShowOnMap }: Props) => {
     ]);
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      onPress={onOpen ? () => onOpen(incident.id) : undefined}
+      disabled={!onOpen}
+      accessibilityRole={onOpen ? 'button' : undefined}
+      accessibilityLabel={onOpen ? `${cat.label}. Abrir aviso` : undefined}
+      style={({ pressed }) => [styles.card, pressed && onOpen && { opacity: 0.93 }]}
+    >
       <View style={[styles.stripe, { backgroundColor: sev }]} />
       <View style={styles.body}>
         <View style={styles.row}>
@@ -57,6 +67,7 @@ export const IncidentCard = ({ incident, compact, onShowOnMap }: Props) => {
               <AppIcon name="map-pin" color={colors.muted} size={12} />
               <Text style={styles.meta} numberOfLines={1}>
                 {readableAddress(incident.zone.address) ?? areaName(incident.zone)}
+                {distanceText ? ` · ${distanceText}` : ''}
               </Text>
             </View>
           </View>
@@ -168,7 +179,7 @@ export const IncidentCard = ({ incident, compact, onShowOnMap }: Props) => {
           )}
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 };
 

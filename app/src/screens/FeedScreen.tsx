@@ -1,35 +1,40 @@
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActiveFilters } from '../components/ActiveFilters';
 import { AppIcon } from '../components/AppIcon';
-import { CategoryIcon } from '../components/CategoryIcon';
+import { FilterSheet } from '../components/FilterSheet';
 import { IncidentCard } from '../components/IncidentCard';
-import { categories } from '../data/categories';
 import { haversineMeters } from '../data/places';
 import { CategoryId } from '../data/types';
+import {
+  SortMode,
+  countByCategory,
+  distanceTo,
+  filterByCategories,
+  formatDistance,
+  sortIncidents,
+  toggleCategory,
+} from '../lib/filters';
 import { isActive } from '../lib/privacy';
 import { NEARBY_RADIUS_M, getUserLocation } from '../lib/userLocation';
 import { useIncidents } from '../store';
 import { colors, radius } from '../theme';
 
 type Mode = 'all' | 'near' | 'mine';
-type Sort = 'recent' | 'near';
 
-export const FeedScreen = ({ onShowOnMap }: { onShowOnMap?: (id: string) => void }) => {
+interface Props {
+  onOpenIncident: (id: string) => void;
+  onShowOnMap: (id: string) => void;
+}
+
+export const FeedScreen = ({ onOpenIncident, onShowOnMap }: Props) => {
   const { incidents, refresh, ready } = useIncidents();
   const [mode, setMode] = useState<Mode>('all');
-  const [catFilter, setCatFilter] = useState<CategoryId | 'all'>('all');
+  const [cats, setCats] = useState<CategoryId[]>([]);
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<Sort>('recent');
+  const [sort, setSort] = useState<SortMode>('recent');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -43,16 +48,6 @@ export const FeedScreen = ({ onShowOnMap }: { onShowOnMap?: (id: string) => void
     };
   }, []);
 
-  const onSort = (next: Sort) => {
-    setSort(next);
-    Haptics.selectionAsync().catch(() => {});
-    if (next === 'near' && !userLoc) {
-      getUserLocation(true).then((loc) => {
-        if (loc) setUserLoc(loc);
-      });
-    }
-  };
-
   const handleRefresh = async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -63,47 +58,40 @@ export const FeedScreen = ({ onShowOnMap }: { onShowOnMap?: (id: string) => void
     }
   };
 
-  const list = useMemo(() => {
-    let l = incidents.filter((i) => isActive(i.createdAt) && !i.flaggedByMe);
+  /** «Más cercanos» necesita la ubicación: se pide al elegirlo y, si no se concede, se avisa. */
+  const onSort = async (next: SortMode) => {
+    setSort(next);
+    if (next === 'near' && !userLoc) {
+      const loc = await getUserLocation(true);
+      if (loc) setUserLoc(loc);
+      else {
+        setSort('recent');
+        Alert.alert('Ubicación desactivada', 'Permite la ubicación en los ajustes del móvil para ordenar los avisos por cercanía.');
+      }
+    }
+  };
 
-    // Modo de cercanía o autor
+  // Base de la lista (modo y búsqueda), antes de filtrar por categoría: de ahí salen los contadores.
+  const base = useMemo(() => {
+    let l = incidents.filter((i) => isActive(i.createdAt) && !i.flaggedByMe);
     if (mode === 'near') {
       l = userLoc
-        ? l.filter((i) => {
-            const lat = i.zone.lat ?? 0;
-            const lng = i.zone.lng ?? 0;
-            if (!lat && !lng) return false;
-            return haversineMeters(userLoc, { lat, lng }) <= NEARBY_RADIUS_M;
-          })
+        ? l.filter((i) => i.zone.lat != null && i.zone.lng != null && haversineMeters(userLoc, { lat: i.zone.lat, lng: i.zone.lng }) <= NEARBY_RADIUS_M)
         : [];
     }
     if (mode === 'mine') l = l.filter((i) => i.mine);
-
-    // Filtro por categoría
-    if (catFilter !== 'all') {
-      l = l.filter((i) => i.category === catFilter);
+    const q = search.trim().toLowerCase();
+    if (q.length > 0) {
+      l = l.filter((i) => i.description.toLowerCase().includes(q) || (i.zone.address ?? '').toLowerCase().includes(q));
     }
+    return l;
+  }, [incidents, mode, search, userLoc]);
 
-    // Búsqueda por texto libre
-    if (search.trim().length > 0) {
-      const q = search.trim().toLowerCase();
-      l = l.filter(
-        (i) =>
-          i.description.toLowerCase().includes(q) ||
-          (i.zone.address && i.zone.address.toLowerCase().includes(q)),
-      );
-    }
-
-    if (sort === 'near' && userLoc) {
-      // Más cercanos primero (los avisos sin coordenadas, al final); a igual distancia, el más reciente.
-      const dist = (i: (typeof l)[number]) =>
-        i.zone.lat != null && i.zone.lng != null
-          ? haversineMeters(userLoc, { lat: i.zone.lat, lng: i.zone.lng })
-          : Number.POSITIVE_INFINITY;
-      return l.sort((a, b) => dist(a) - dist(b) || b.createdAt - a.createdAt);
-    }
-    return l.sort((a, b) => b.createdAt - a.createdAt);
-  }, [incidents, mode, catFilter, search, userLoc, sort]);
+  const counts = useMemo(() => countByCategory(base), [base]);
+  const list = useMemo(
+    () => sortIncidents(filterByCategories(base, cats), sort, userLoc),
+    [base, cats, sort, userLoc],
+  );
 
   const tabs: { id: Mode; label: string }[] = [
     { id: 'all', label: 'Todos' },
@@ -111,213 +99,168 @@ export const FeedScreen = ({ onShowOnMap }: { onShowOnMap?: (id: string) => void
     { id: 'mine', label: 'Míos' },
   ];
 
+  const sortLabel = sort === 'near' && userLoc ? 'Más cercanos primero' : 'Más recientes primero';
+
   return (
-    <FlatList
-      data={list}
-      keyExtractor={(i) => i.id}
-      contentContainerStyle={styles.content}
-      ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-        />
-      }
-      ListHeaderComponent={
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>Avisos</Text>
-            <Text style={styles.badgeCount}>{list.length}</Text>
-          </View>
+    <>
+      <FlatList
+        data={list}
+        keyExtractor={(i) => i.id}
+        contentContainerStyle={styles.content}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+        }
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Avisos</Text>
+              <Text style={styles.badgeCount}>{list.length}</Text>
+            </View>
 
-          {/* Buscador */}
-          <View style={styles.searchBar}>
-            <AppIcon name="search" color={colors.muted} size={18} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Buscar en el barrio (calle, suceso...)"
-              placeholderTextColor={colors.muted}
-              style={styles.searchInput}
-              returnKeyType="search"
-            />
-            {search.length > 0 && (
-              <Pressable
-                onPress={() => setSearch('')}
-                hitSlop={8}
-                style={styles.clearBtn}
-                accessibilityRole="button"
-                accessibilityLabel="Borrar búsqueda"
-              >
-                <AppIcon name="x" color={colors.muted} size={14} />
-              </Pressable>
-            )}
-          </View>
+            <View style={styles.searchBar}>
+              <AppIcon name="search" color={colors.muted} size={18} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Buscar en el barrio (calle, suceso...)"
+                placeholderTextColor={colors.muted}
+                style={styles.searchInput}
+                returnKeyType="search"
+              />
+              {search.length > 0 && (
+                <Pressable onPress={() => setSearch('')} hitSlop={8} style={styles.clearBtn} accessibilityRole="button" accessibilityLabel="Borrar búsqueda">
+                  <AppIcon name="x" color={colors.muted} size={14} />
+                </Pressable>
+              )}
+            </View>
 
-          {/* Segmented control: Todos / Cerca de mí / Míos */}
-          <View style={styles.seg}>
-            {tabs.map((t) => (
-              <Pressable
-                key={t.id}
-                onPress={() => {
-                  setMode(t.id);
-                  Haptics.selectionAsync().catch(() => {});
-                }}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: mode === t.id }}
-                style={({ pressed }) => [
-                  styles.segItem,
-                  mode === t.id && styles.segOn,
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                <Text style={[styles.segText, mode === t.id && { color: '#fff' }]}>{t.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {/* Orden de la lista */}
-          <View style={styles.sortRow}>
-            <Text style={styles.sortLabel}>Ordenar por</Text>
-            {(
-              [
-                ['recent', 'Más recientes'],
-                ['near', 'Más cercanos'],
-              ] as const
-            ).map(([id, label]) => (
-              <Pressable
-                key={id}
-                onPress={() => onSort(id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: sort === id }}
-                style={({ pressed }) => [styles.chip, sort === id && styles.chipOn, pressed && { opacity: 0.8 }]}
-              >
-                <Text style={[styles.chipText, sort === id && { color: '#fff' }]}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
-          {sort === 'near' && !userLoc && (
-            <Text style={styles.sortHint}>Activa la ubicación para ordenar por cercanía.</Text>
-          )}
-
-          {/* Carrusel de chips de categoría */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsScroll}
-          >
-            <Pressable
-              onPress={() => {
-                setCatFilter('all');
-                Haptics.selectionAsync().catch(() => {});
-              }}
-              style={({ pressed }) => [
-                styles.chip,
-                catFilter === 'all' && styles.chipOn,
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <CategoryIcon id="all" color={catFilter === 'all' ? '#fff' : colors.muted} size={14} />
-              <Text style={[styles.chipText, catFilter === 'all' && { color: '#fff' }]}>Todas</Text>
-            </Pressable>
-            {categories.map((c) => {
-              const active = catFilter === c.id;
-              return (
+            <View style={styles.seg}>
+              {tabs.map((t) => (
                 <Pressable
-                  key={c.id}
+                  key={t.id}
                   onPress={() => {
-                    setCatFilter(c.id);
+                    setMode(t.id);
                     Haptics.selectionAsync().catch(() => {});
                   }}
-                  style={({ pressed }) => [
-                    styles.chip,
-                    active && styles.chipOn,
-                    pressed && { opacity: 0.8 },
-                  ]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: mode === t.id }}
+                  style={({ pressed }) => [styles.segItem, mode === t.id && styles.segOn, pressed && { opacity: 0.8 }]}
                 >
-                  <CategoryIcon id={c.id} color={active ? '#fff' : colors.muted} size={14} />
-                  <Text style={[styles.chipText, active && { color: '#fff' }]}>{c.label}</Text>
+                  <Text style={[styles.segText, mode === t.id && { color: '#fff' }]}>{t.label}</Text>
                 </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      }
-      ListEmptyComponent={
-        !ready ? (
-          <View style={{ gap: 12, marginTop: 10 }}>
-            {[1, 2, 3].map((k) => (
-              <View key={k} style={styles.skeletonCard}>
-                <View style={styles.skeletonHeader}>
-                  <View style={styles.skeletonIcon} />
-                  <View style={{ flex: 1, gap: 8 }}>
-                    <View style={styles.skeletonLineShort} />
-                    <View style={styles.skeletonLineTiny} />
-                  </View>
-                </View>
-                <View style={styles.skeletonLineLong} />
-                <View style={styles.skeletonLineMedium} />
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyCard}>
-            <View
-              style={[
-                styles.emptyIconCircle,
-                {
-                  backgroundColor:
-                    search.length > 0
-                      ? 'rgba(251,191,36,0.12)'
-                      : mode === 'near' && !userLoc
-                        ? 'rgba(91,140,255,0.12)'
-                        : 'rgba(52,211,153,0.12)',
-                },
-              ]}
-            >
-              <AppIcon
-                name={
-                  search.length > 0
-                    ? 'search'
-                    : mode === 'near' && !userLoc
-                      ? 'map-pin'
-                      : 'shield-check'
-                }
-                color={
-                  search.length > 0
-                    ? colors.warn
-                    : mode === 'near' && !userLoc
-                      ? colors.accent
-                      : colors.ok
-                }
-                size={34}
-              />
+              ))}
             </View>
-            <Text style={styles.emptyTitle}>
-              {search.length > 0
-                ? 'Sin resultados'
-                : mode === 'mine'
-                  ? 'Sin avisos publicados'
-                  : mode === 'near' && !userLoc
-                    ? 'Ubicación desactivada'
-                    : 'Zona en calma'}
-            </Text>
-            <Text style={styles.emptyText}>
-              {search.length > 0
-                ? `No encontramos avisos que coincidan con «${search}». Prueba con otro término.`
-                : mode === 'mine'
-                  ? 'Los avisos anónimos que publiques se gestionarán desde aquí.'
-                  : mode === 'near' && !userLoc
-                    ? 'Permite la ubicación para ver las incidencias registradas en tu entorno inmediato.'
-                    : 'No hay alertas activas en esta categoría durante las últimas 72 horas.'}
-            </Text>
+
+            <View style={styles.toolRow}>
+              <Pressable
+                onPress={() => setFiltersOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={cats.length > 0 ? `Filtros, ${cats.length} activos` : 'Filtros'}
+                style={({ pressed }) => [styles.filterBtn, cats.length > 0 && styles.filterBtnOn, pressed && { opacity: 0.85 }]}
+              >
+                <AppIcon name="filter" color={cats.length > 0 ? '#fff' : colors.text} size={18} />
+                <Text style={[styles.filterText, cats.length > 0 && { color: '#fff' }]}>
+                  {cats.length > 0 ? `Filtros · ${cats.length}` : 'Filtros'}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => setFiltersOpen(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Orden: ${sortLabel}. Cambiar`} style={styles.sortCaption}>
+                <Text style={styles.sortText}>{sortLabel}</Text>
+                <AppIcon name="chevron-down" color={colors.muted} size={14} />
+              </Pressable>
+            </View>
+
+            <ActiveFilters selected={cats} onRemove={(id) => setCats((c) => toggleCategory(c, id))} onClear={() => setCats([])} />
           </View>
-        )
-      }
-      renderItem={({ item }) => <IncidentCard incident={item} onShowOnMap={onShowOnMap} />}
-    />
+        }
+        ListEmptyComponent={
+          !ready ? (
+            <View style={{ gap: 12, marginTop: 10 }}>
+              {[1, 2, 3].map((k) => (
+                <View key={k} style={styles.skeletonCard}>
+                  <View style={styles.skeletonHeader}>
+                    <View style={styles.skeletonIcon} />
+                    <View style={{ flex: 1, gap: 8 }}>
+                      <View style={styles.skeletonLineShort} />
+                      <View style={styles.skeletonLineTiny} />
+                    </View>
+                  </View>
+                  <View style={styles.skeletonLineLong} />
+                  <View style={styles.skeletonLineMedium} />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyCard}>
+              <View
+                style={[
+                  styles.emptyIconCircle,
+                  {
+                    backgroundColor:
+                      search.length > 0 || cats.length > 0
+                        ? 'rgba(251,191,36,0.12)'
+                        : mode === 'near' && !userLoc
+                          ? 'rgba(91,140,255,0.12)'
+                          : 'rgba(52,211,153,0.12)',
+                  },
+                ]}
+              >
+                <AppIcon
+                  name={search.length > 0 || cats.length > 0 ? 'search' : mode === 'near' && !userLoc ? 'map-pin' : 'shield-check'}
+                  color={search.length > 0 || cats.length > 0 ? colors.warn : mode === 'near' && !userLoc ? colors.accent : colors.ok}
+                  size={34}
+                />
+              </View>
+              <Text style={styles.emptyTitle}>
+                {search.length > 0 || cats.length > 0
+                  ? 'Sin resultados'
+                  : mode === 'mine'
+                    ? 'Sin avisos publicados'
+                    : mode === 'near' && !userLoc
+                      ? 'Ubicación desactivada'
+                      : 'Zona en calma'}
+              </Text>
+              <Text style={styles.emptyText}>
+                {search.length > 0
+                  ? `No encontramos avisos que coincidan con «${search}». Prueba con otro término.`
+                  : cats.length > 0
+                    ? 'No hay avisos con los filtros elegidos en las últimas 72 horas.'
+                    : mode === 'mine'
+                      ? 'Los avisos anónimos que publiques se gestionarán desde aquí.'
+                      : mode === 'near' && !userLoc
+                        ? 'Permite la ubicación para ver las incidencias registradas en tu entorno inmediato.'
+                        : 'No hay alertas activas durante las últimas 72 horas.'}
+              </Text>
+              {cats.length > 0 && (
+                <Pressable onPress={() => setCats([])} accessibilityRole="button" hitSlop={8}>
+                  <Text style={styles.emptyAction}>Quitar filtros</Text>
+                </Pressable>
+              )}
+            </View>
+          )
+        }
+        renderItem={({ item }) => (
+          <IncidentCard
+            incident={item}
+            onOpen={onOpenIncident}
+            onShowOnMap={onShowOnMap}
+            distanceText={sort === 'near' && userLoc ? formatDistance(distanceTo(item, userLoc)) : null}
+          />
+        )}
+      />
+
+      <FilterSheet
+        visible={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        selected={cats}
+        onChange={setCats}
+        counts={counts}
+        resultCount={list.length}
+        sort={sort}
+        onSort={onSort}
+      />
+    </>
   );
 };
 
@@ -334,62 +277,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.line,
+    overflow: 'hidden',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 14,
-    padding: 0,
-  },
-  clearBtn: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  seg: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
     borderRadius: radius.pill,
-    padding: 4,
     borderWidth: 1,
     borderColor: colors.line,
+    paddingHorizontal: 16,
+    minHeight: 48,
   },
+  searchInput: { flex: 1, color: colors.text, fontSize: 14, paddingVertical: 10 },
+  clearBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
+  seg: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.pill, padding: 4, borderWidth: 1, borderColor: colors.line },
   segItem: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.pill },
   segOn: { backgroundColor: colors.primary },
   segText: { color: colors.muted, fontSize: 13, fontWeight: '700' },
-  sortRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sortLabel: { color: colors.muted, fontSize: 12, fontWeight: '700' },
-  sortHint: { color: colors.muted, fontSize: 12, marginTop: -4 },
-  chipsScroll: { gap: 8, paddingVertical: 2 },
-  chip: {
+  toolRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
+    height: 44,
+    paddingHorizontal: 14,
+    borderRadius: 22,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
   },
-  chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.muted, fontSize: 12, fontWeight: '700' },
+  filterBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterText: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  sortCaption: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, justifyContent: 'flex-end' },
+  sortText: { color: colors.muted, fontSize: 12, fontWeight: '700' },
   emptyCard: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -402,69 +324,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
     gap: 10,
   },
-  emptyIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  emptyText: {
-    color: colors.muted,
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: 'center',
-    maxWidth: 300,
-  },
-  skeletonCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: 16,
-    gap: 12,
-    opacity: 0.65,
-  },
-  skeletonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  skeletonIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface2,
-  },
-  skeletonLineShort: {
-    width: '45%',
-    height: 14,
-    borderRadius: 6,
-    backgroundColor: colors.surface2,
-  },
-  skeletonLineTiny: {
-    width: '25%',
-    height: 10,
-    borderRadius: 4,
-    backgroundColor: colors.surface2,
-  },
-  skeletonLineLong: {
-    width: '90%',
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.surface2,
-  },
-  skeletonLineMedium: {
-    width: '65%',
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.surface2,
-  },
+  emptyIconCircle: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  emptyText: { color: colors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 300 },
+  emptyAction: { color: colors.accent, fontSize: 14, fontWeight: '800', marginTop: 4 },
+  skeletonCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 16, gap: 12, opacity: 0.65 },
+  skeletonHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  skeletonIcon: { width: 38, height: 38, borderRadius: radius.pill, backgroundColor: colors.surface2 },
+  skeletonLineShort: { width: '45%', height: 14, borderRadius: 6, backgroundColor: colors.surface2 },
+  skeletonLineTiny: { width: '25%', height: 10, borderRadius: 4, backgroundColor: colors.surface2 },
+  skeletonLineLong: { width: '90%', height: 12, borderRadius: 6, backgroundColor: colors.surface2 },
+  skeletonLineMedium: { width: '65%', height: 12, borderRadius: 6, backgroundColor: colors.surface2 },
 });
