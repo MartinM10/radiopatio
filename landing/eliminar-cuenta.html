@@ -20,8 +20,12 @@
       --primary-hover: #4F46E5;
       --text-main: #F8FAFC;
       --text-muted: #94A3B8;
-      --text-dim: #64748B;
+      --text-dim: #8190A8;
       --nav-bg: rgba(7, 10, 19, 0.85);
+      --heading: #E2E8F0;
+      --card-text: #CBD5E1;
+      --link: #A5B4FC;
+      --warn-text: #FECDD3;
     }
 
     [data-theme="light"] {
@@ -34,6 +38,10 @@
       --text-muted: #475569;
       --text-dim: #64748B;
       --nav-bg: rgba(248, 250, 252, 0.88);
+      --heading: #0F172A;
+      --card-text: #1E293B;
+      --link: #4338CA;
+      --warn-text: #9F1239;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -120,7 +128,7 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 1.45rem;
       margin: 36px 0 16px;
-      color: #E2E8F0;
+      color: var(--heading);
     }
 
     p, ul {
@@ -151,7 +159,7 @@
 
     .highlight-card p {
       margin-bottom: 0;
-      color: #CBD5E1;
+      color: var(--card-text);
     }
 
     footer {
@@ -163,7 +171,7 @@
     }
 
     a {
-      color: #A5B4FC;
+      color: var(--link);
       text-decoration: underline;
     }
   </style>
