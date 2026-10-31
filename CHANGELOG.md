@@ -7,6 +7,14 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.4.1](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.4.0...radiopatio-v1.4.1) (2026-10-31)
+
+
+### 🐛 Correcciones
+
+* **landing:** point GitHub and licence links at the real repository ([2bb64f7](https://github.com/MartinM10/radiopatio/commit/2bb64f7c62cdad06f978d87eb8e1663d572619df))
+* **landing:** readable legal pages in light theme and a real status page ([0a3519e](https://github.com/MartinM10/radiopatio/commit/0a3519eb162dd9d75f3c19e31626b87c107b67ed))
+
 ## [1.4.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.3.0...radiopatio-v1.4.0) (2026-10-31)
 
 
