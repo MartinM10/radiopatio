@@ -7,6 +7,37 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.4.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.3.0...radiopatio-v1.4.0) (2026-10-31)
+
+
+### ✨ Funcionalidades
+
+* **app:** redesign map and feed with working gestures, filters and detail page ([cc9b33b](https://github.com/MartinM10/radiopatio/commit/cc9b33bff5f0c4b9befe1dd0d45601bea87d4cba))
+* **app:** street suggestion, grouped map markers and a richer feed ([a76a250](https://github.com/MartinM10/radiopatio/commit/a76a250c4191f8dc6b93fd58556228019c68b7ec))
+* **server:** suggest the street of a pin and strip portal numbers ([9cd34d9](https://github.com/MartinM10/radiopatio/commit/9cd34d96729085f7db6250a84cfcedb06713ec02))
+
+
+### 🐛 Correcciones
+
+* **app:** onboarding no longer claims the exact position is never stored ([3dfc12e](https://github.com/MartinM10/radiopatio/commit/3dfc12e796ad0ec97c799aedabfd649f049ffb73))
+* **privacy:** publish the same hex-cell centre for every point in a cell ([372d670](https://github.com/MartinM10/radiopatio/commit/372d670074036b0942274c366b97ef01314aab9b))
+
+
+### 📝 Documentación
+
+* **landing:** add account and data deletion page for Google Play ([fbee286](https://github.com/MartinM10/radiopatio/commit/fbee286845728d13a28948334c4d9408fe4f602a))
+* **landing:** drop unpkg from the privacy policy ([835b98a](https://github.com/MartinM10/radiopatio/commit/835b98a8b76708d8740841e18687d59578899216))
+* **landing:** list the third parties the app really talks to ([a3ac27c](https://github.com/MartinM10/radiopatio/commit/a3ac27ca8a8024a10f79f0ee14decd526788c8a8))
+* **landing:** name the data controller in the privacy policy ([87efac3](https://github.com/MartinM10/radiopatio/commit/87efac3efe63af36643dabc767ce6f5cafee53c9))
+* state that exact coordinates are kept up to 72 h in landing and LEGAL ([75d8697](https://github.com/MartinM10/radiopatio/commit/75d8697d79795b849554dd6c51f87a9ce91a0715))
+
+
+### 📦 Compilación y EAS
+
+* **app:** bump android versionCode to 7 ([e90ac0f](https://github.com/MartinM10/radiopatio/commit/e90ac0fa8a4d3e10f576932a9f7d1da8a165fddb))
+* **app:** bump android versionCode to 8 ([a58f447](https://github.com/MartinM10/radiopatio/commit/a58f4478ac41abc355777bc209d0477371280572))
+* **app:** bump android versionCode to 9 ([1f6958d](https://github.com/MartinM10/radiopatio/commit/1f6958d5dc3593be7c91c1b34fe60efb692a1f7a))
+
 ## [1.3.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.2.0...radiopatio-v1.3.0) (2026-10-28)
 
 
