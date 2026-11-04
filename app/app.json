@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "app.radiopatio",
-      "versionCode": 9,
+      "versionCode": 10,
       "adaptiveIcon": {
         "backgroundColor": "#021536",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -27,7 +27,8 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
