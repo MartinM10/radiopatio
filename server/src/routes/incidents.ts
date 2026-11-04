@@ -6,6 +6,7 @@ import { pool } from '../db';
 import { purgeExpiredIncidents } from '../db/purge';
 import { authenticateWrite, resolveReadHash } from '../lib/device';
 import { scheduleJudge } from '../lib/judge';
+import { notifyConfirmation, notifyNewIncident } from '../lib/notify';
 import { snapToHexGrid } from '../lib/geo';
 import {
   haversineKm,
@@ -370,6 +371,20 @@ export async function incidentRoutes(app: FastifyInstance) {
     // sin bloquear la publicación ni rechazar nunca por sí solo.
     scheduleJudge(id, description, category);
 
+    // Avisa a los vecinos cercanos y a quien vigila la zona. Un aviso en
+    // cuarentena aún no es público: se notificará cuando se promocione.
+    if (initialStatus === 'active') {
+      void notifyNewIncident({
+        id,
+        category,
+        description,
+        address: zone.address ?? null,
+        authorHash: deviceHash,
+        hexLat: hex.centerLat,
+        hexLng: hex.centerLng,
+      });
+    }
+
     const created: Incident = {
       id,
       category,
@@ -408,7 +423,8 @@ export async function incidentRoutes(app: FastifyInstance) {
         await client.query('BEGIN');
 
         const incRes = await client.query(
-          `SELECT id, device_hash, status, confirmations_count FROM incidents WHERE id = $1 FOR UPDATE`,
+          `SELECT id, device_hash, status, confirmations_count, category, description, address, hex_lat, hex_lng
+           FROM incidents WHERE id = $1 FOR UPDATE`,
           [id]
         );
 
@@ -463,9 +479,24 @@ export async function incidentRoutes(app: FastifyInstance) {
         const promoted = await client.query("UPDATE incidents SET status = 'active' WHERE id = $1 AND status = 'pending' AND confirmations_count >= 2 RETURNING id", [id]);
         if ((promoted.rowCount ?? 0) > 0) {
           await client.query("INSERT INTO moderation_log (incident_id, action, actor, reason) VALUES ($1, 'auto-promote', 'sistema', '2 confirmaciones vecinales')", [id]);
+          // Sale de la cuarentena: ahora sí es público y se avisa a la zona.
+          if (incident.hex_lat !== null && incident.hex_lng !== null) {
+            void notifyNewIncident({
+              id,
+              category: incident.category,
+              description: incident.description,
+              address: incident.address,
+              authorHash: incident.device_hash,
+              hexLat: Number(incident.hex_lat),
+              hexLng: Number(incident.hex_lng),
+            });
+          }
         }
 
         await client.query('COMMIT');
+
+        // «Alguien ha validado tu aviso». Sin esperar: no frena la respuesta.
+        void notifyConfirmation(id, incident.device_hash, incident.category, newCount);
 
         return {
           success: true,

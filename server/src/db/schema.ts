@@ -79,4 +79,44 @@ CREATE INDEX IF NOT EXISTS idx_incidents_device ON incidents(device_hash);
 CREATE INDEX IF NOT EXISTS idx_confirmations_device ON incident_confirmations(device_hash);
 CREATE INDEX IF NOT EXISTS idx_flags_device ON incident_flags(device_hash);
 CREATE INDEX IF NOT EXISTS idx_devices_created ON devices(created_at);
+
+-- Notificaciones. El servidor solo guarda lo mínimo para avisar:
+--  · device_hash: hash estable del dispositivo (el que llevan los avisos), para
+--    localizar al autor de un aviso cuando alguien lo confirma.
+--  · push_token: token de Expo Push (opcional; sin él solo hay bandeja en la app).
+--  · area_*: centro de la celda hex (~450 m) donde está el vecino, nunca la posición exacta.
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_hash VARCHAR(64);
+CREATE INDEX IF NOT EXISTS idx_devices_hash ON devices(device_hash);
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS push_token VARCHAR(200);
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS notify_confirmations BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS notify_nearby BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS notify_watched BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS area_lat DOUBLE PRECISION;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS area_lng DOUBLE PRECISION;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS area_at TIMESTAMPTZ;
+
+-- Zonas vigiladas: sitios donde el vecino no está pero le importan.
+CREATE TABLE IF NOT EXISTS watched_zones (
+    id SERIAL PRIMARY KEY,
+    device_id VARCHAR(36) NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    label VARCHAR(60) NOT NULL,
+    hex_key VARCHAR(64) NOT NULL,
+    lat DOUBLE PRECISION NOT NULL,
+    lng DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_watched_device ON watched_zones(device_id);
+
+-- Bandeja de notificaciones (la app la consulta; el push es un extra).
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    device_id VARCHAR(36) NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    kind VARCHAR(20) NOT NULL,
+    incident_id VARCHAR(36),
+    title VARCHAR(120) NOT NULL,
+    body VARCHAR(280) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    read_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_device ON notifications(device_id, created_at DESC);
 `;

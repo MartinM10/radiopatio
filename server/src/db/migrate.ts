@@ -42,6 +42,13 @@ WHERE i.id = calc.id
     OR i.hex_lng IS DISTINCT FROM calc.c_lng);
 `;
 
+/** Hash de dispositivo de las cuentas anteriores a las notificaciones (misma fórmula que lib/device.ts). */
+const DEVICE_HASH_BACKFILL_SQL = `
+UPDATE devices
+SET device_hash = encode(sha256(convert_to('dev:' || id || ':' || $1, 'UTF8')), 'hex')
+WHERE device_hash IS NULL;
+`;
+
 export async function runMigrations(): Promise<void> {
   console.log('Running database migrations...');
   const client = await pool.connect();
@@ -49,6 +56,7 @@ export async function runMigrations(): Promise<void> {
     await client.query('BEGIN');
     await client.query(SCHEMA_SQL);
     await client.query(BACKFILL_SQL);
+    await client.query(DEVICE_HASH_BACKFILL_SQL, [config.deviceSalt]);
     await client.query('COMMIT');
     console.log('Database migrations completed successfully.');
   } catch (error) {

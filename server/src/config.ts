@@ -49,6 +49,17 @@ export const config = {
   // (fail-closed): jamás se aceptan tokens emitidos para otra aplicación.
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
 
+  // ── Notificaciones ────────────────────────────────────────────────────────
+  // Push vía Expo (https://docs.expo.dev/push-notifications/sending-notifications/).
+  // PUSH_ENABLED=0 lo apaga: la bandeja dentro de la app sigue funcionando.
+  pushEnabled: process.env.PUSH_ENABLED !== '0',
+  expoPushUrl: process.env.EXPO_PUSH_URL || 'https://exp.host/--/api/v2/push/send',
+  // Radio de «ha pasado algo cerca de ti» y de las zonas vigiladas (m).
+  notifyRadiusM: parseInt(process.env.NOTIFY_RADIUS_M || '2000', 10),
+  // Tope por dispositivo y hora: un barrio movido no debe convertir el móvil en una sirena.
+  notifyMaxPerHour: parseInt(process.env.NOTIFY_MAX_PER_HOUR || '6', 10),
+  maxWatchedZones: parseInt(process.env.MAX_WATCHED_ZONES || '5', 10),
+
   // ── Geocodificación inversa (calle sugerida al fijar el pin) ──────────────
   // El servidor consulta un servicio externo con las coordenadas, sin ninguna
   // identidad del vecino (ver lib/geocode.ts). GEOCODER_ENABLED=0 la apaga y

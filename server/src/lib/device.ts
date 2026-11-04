@@ -56,6 +56,27 @@ export interface AuthedDevice {
 }
 
 /**
+ * Autentica un dispositivo sin exigir identidad verificada: para ajustes y
+ * bandeja de notificaciones, que no escriben nada público. Responde 401 y
+ * devuelve null si no hay cuenta válida (el handler debe hacer `return reply`).
+ */
+export async function authenticateDevice(
+  req: FastifyRequest,
+  reply: FastifyReply,
+): Promise<DeviceRecord | null> {
+  const token = readToken(req);
+  const device = token ? await lookupDevice(token) : null;
+  if (!device) {
+    reply.status(401).send({
+      error: token ? 'INVALID_DEVICE_TOKEN' : 'DEVICE_TOKEN_REQUIRED',
+      message: 'Tu sesión ya no es válida. Reinicia la app para volver a iniciarla.',
+    });
+    return null;
+  }
+  return device;
+}
+
+/**
  * Autentica una escritura. Devuelve el dispositivo, o responde 401/403 y
  * devuelve null (el handler debe hacer `return reply`).
  */
@@ -114,8 +135,8 @@ export async function registerDevice(): Promise<IssuedDevice> {
   const deviceId = randomBytes(16).toString('hex');
   const token = randomBytes(32).toString('base64url');
   await pool.query(
-    `INSERT INTO devices (id, token_hash, created_at) VALUES ($1, $2, NOW())`,
-    [deviceId, hashToken(token)],
+    `INSERT INTO devices (id, token_hash, created_at, device_hash) VALUES ($1, $2, NOW(), $3)`,
+    [deviceId, hashToken(token), deviceHashFor(deviceId)],
   );
   return { deviceId, token };
 }
@@ -130,12 +151,12 @@ export async function issueDeviceForIdentity(identityHash: string): Promise<Issu
   const token = randomBytes(32).toString('base64url');
   const candidateId = randomBytes(16).toString('hex');
   const { rows } = await pool.query(
-    `INSERT INTO devices (id, token_hash, created_at, identity_hash)
-     VALUES ($1, $2, NOW(), $3)
+    `INSERT INTO devices (id, token_hash, created_at, identity_hash, device_hash)
+     VALUES ($1, $2, NOW(), $3, $4)
      ON CONFLICT (identity_hash) WHERE identity_hash IS NOT NULL
      DO UPDATE SET token_hash = EXCLUDED.token_hash
      RETURNING id`,
-    [candidateId, hashToken(token), identityHash],
+    [candidateId, hashToken(token), identityHash, deviceHashFor(candidateId)],
   );
   return { deviceId: rows[0].id as string, token };
 }

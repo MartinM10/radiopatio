@@ -9,6 +9,7 @@ import { geocodeRoutes } from './routes/geocode';
 import { healthRoutes } from './routes/health';
 import { incidentRoutes } from './routes/incidents';
 import { moderationRoutes } from './routes/moderation';
+import { notificationRoutes } from './routes/notifications';
 import { zoneRoutes } from './routes/zones';
 
 export function buildApp(): FastifyInstance {
@@ -70,6 +71,7 @@ export function buildApp(): FastifyInstance {
   app.register(geocodeRoutes);
   app.register(incidentRoutes);
   app.register(moderationRoutes);
+  app.register(notificationRoutes);
   app.register(zoneRoutes);
 
   return app;
