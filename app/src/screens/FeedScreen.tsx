@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActiveFilters } from '../components/ActiveFilters';
 import { AppIcon } from '../components/AppIcon';
+import { BellButton } from '../components/BellButton';
 import { FilterSheet } from '../components/FilterSheet';
 import { IncidentCard } from '../components/IncidentCard';
 import { haversineMeters } from '../data/places';
@@ -26,9 +27,10 @@ type Mode = 'all' | 'near' | 'mine';
 interface Props {
   onOpenIncident: (id: string) => void;
   onShowOnMap: (id: string) => void;
+  onOpenNotifications: () => void;
 }
 
-export const FeedScreen = ({ onOpenIncident, onShowOnMap }: Props) => {
+export const FeedScreen = ({ onOpenIncident, onShowOnMap, onOpenNotifications }: Props) => {
   const { incidents, refresh, ready } = useIncidents();
   const [mode, setMode] = useState<Mode>('all');
   const [cats, setCats] = useState<CategoryId[]>([]);
@@ -116,7 +118,10 @@ export const FeedScreen = ({ onOpenIncident, onShowOnMap }: Props) => {
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <Text style={styles.title}>Avisos</Text>
-              <Text style={styles.badgeCount}>{list.length}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={styles.badgeCount}>{list.length}</Text>
+                <BellButton onPress={onOpenNotifications} />
+              </View>
             </View>
 
             <View style={styles.searchBar}>

@@ -237,3 +237,69 @@ export async function apiGoogleLogin(idToken: string): Promise<void> {
     [DEVICE_VERIFIED_KEY, '1'],
   ]);
 }
+
+// ── Notificaciones ──────────────────────────────────────────────────────────
+
+export type NotificationKind = 'confirmation' | 'nearby' | 'watched';
+
+export interface InboxItem {
+  id: number;
+  kind: NotificationKind;
+  incidentId: string | null;
+  title: string;
+  body: string;
+  createdAt: number;
+  read: boolean;
+}
+
+export interface WatchedZone {
+  id: number;
+  label: string;
+  lat: number;
+  lng: number;
+}
+
+export interface NotifySettings {
+  confirmations: boolean;
+  nearby: boolean;
+  watched: boolean;
+  pushRegistered: boolean;
+  /** Centro de la celda (~450 m) donde el servidor cree que estás; null si no la compartes. */
+  area: { lat: number; lng: number } | null;
+  radiusM: number;
+  maxZones: number;
+  zones: WatchedZone[];
+}
+
+export async function apiGetInbox(): Promise<{ unread: number; items: InboxItem[] }> {
+  return (await apiFetch<{ data: { unread: number; items: InboxItem[] } }>('/api/notifications')).data;
+}
+
+export async function apiMarkNotificationsRead(ids?: number[]): Promise<void> {
+  await apiFetch('/api/notifications/read', { method: 'POST', body: JSON.stringify(ids ? { ids } : {}) });
+}
+
+export async function apiGetNotifySettings(): Promise<NotifySettings> {
+  return (await apiFetch<{ data: NotifySettings }>('/api/notifications/settings')).data;
+}
+
+export async function apiUpdateNotifySettings(p: {
+  confirmations?: boolean;
+  nearby?: boolean;
+  watched?: boolean;
+  area?: { lat: number; lng: number } | null;
+}): Promise<NotifySettings> {
+  return (await apiFetch<{ data: NotifySettings }>('/api/notifications/settings', { method: 'PUT', body: JSON.stringify(p) })).data;
+}
+
+export async function apiRegisterPushToken(token: string | null): Promise<void> {
+  await apiFetch('/api/notifications/push', { method: 'PUT', body: JSON.stringify({ token }) });
+}
+
+export async function apiAddWatchedZone(p: { label: string; lat: number; lng: number }): Promise<WatchedZone[]> {
+  return (await apiFetch<{ data: WatchedZone[] }>('/api/notifications/zones', { method: 'POST', body: JSON.stringify(p) })).data;
+}
+
+export async function apiRemoveWatchedZone(id: number): Promise<WatchedZone[]> {
+  return (await apiFetch<{ data: WatchedZone[] }>(`/api/notifications/zones/${id}`, { method: 'DELETE' })).data;
+}

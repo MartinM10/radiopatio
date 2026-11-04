@@ -50,6 +50,13 @@
             "backgroundColor": "#021536"
           }
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF5A4F",
+          "defaultChannel": "alerts"
+        }
       ]
     ]
   }

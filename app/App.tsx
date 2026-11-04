@@ -2,6 +2,8 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { NotificationsScreen } from './src/screens/NotificationsScreen';
+import { NotificationsProvider } from './src/notifications';
 import { IdentityProvider } from './src/components/IdentityGate';
 import { OnboardingModal } from './src/components/OnboardingModal';
 import { TabBar, TabId } from './src/components/TabBar';
@@ -16,6 +18,7 @@ import { colors } from './src/theme';
 export default function App() {
   const [tab, setTab] = useState<TabId>('map');
   const [reporting, setReporting] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   // Aviso abierto en su página de detalle (se llega desde el mapa o desde la lista).
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -28,10 +31,17 @@ export default function App() {
     setTab('map');
   }, []);
 
+  // Desde una notificación se abre el aviso por encima de lo que hubiera abierto.
+  const openIncident = useCallback((id: string) => {
+    setNotifOpen(false);
+    setDetailId(id);
+  }, []);
+
   return (
     <SafeAreaProvider>
       <IncidentsProvider>
         <IdentityProvider>
+        <NotificationsProvider onOpenIncident={openIncident}>
           <StatusBar style="dark" />
           <SafeAreaView style={styles.root} edges={['top']}>
             {/* Las tres pestañas siguen montadas: el mapa conserva su posición y zoom al cambiar de pestaña. */}
@@ -40,16 +50,21 @@ export default function App() {
                 focusId={mapFocus?.id ?? null}
                 focusNonce={mapFocus?.nonce ?? 0}
                 onOpenIncident={setDetailId}
+                onOpenNotifications={() => setNotifOpen(true)}
               />
             </View>
             <View style={[styles.screen, tab !== 'feed' && styles.hidden]}>
-              <FeedScreen onOpenIncident={setDetailId} onShowOnMap={showOnMap} />
+              <FeedScreen onOpenIncident={setDetailId} onShowOnMap={showOnMap} onOpenNotifications={() => setNotifOpen(true)} />
             </View>
             <View style={[styles.screen, tab !== 'help' && styles.hidden]}>
               <HelpScreen onOpenOnboarding={() => setShowOnboarding(true)} />
             </View>
             <TabBar active={tab} onChange={setTab} onReport={() => setReporting(true)} />
           </SafeAreaView>
+
+          <Modal visible={notifOpen} animationType="slide" onRequestClose={() => setNotifOpen(false)}>
+            <NotificationsScreen onClose={() => setNotifOpen(false)} onOpenIncident={openIncident} />
+          </Modal>
 
           <Modal visible={detailId !== null} animationType="slide" onRequestClose={() => setDetailId(null)}>
             {detailId && (
@@ -62,6 +77,7 @@ export default function App() {
           </Modal>
 
           <OnboardingModal forceShow={showOnboarding} onDismiss={() => setShowOnboarding(false)} />
+        </NotificationsProvider>
         </IdentityProvider>
       </IncidentsProvider>
     </SafeAreaProvider>

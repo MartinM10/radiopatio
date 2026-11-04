@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ActiveFilters } from '../components/ActiveFilters';
 import { AppIcon } from '../components/AppIcon';
+import { BellButton } from '../components/BellButton';
 import { FilterSheet } from '../components/FilterSheet';
 import { IncidentRow } from '../components/IncidentRow';
 import { MapHex, MapView, MapViewHandle, SPAIN_VIEW } from '../components/MapView';
@@ -29,6 +30,7 @@ interface HomeProps {
   focusId?: string | null;
   focusNonce?: number;
   onOpenIncident: (id: string) => void;
+  onOpenNotifications: () => void;
 }
 
 interface Selection {
@@ -38,7 +40,7 @@ interface Selection {
 
 const EMPTY: string[] = [];
 
-export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident }: HomeProps) => {
+export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident, onOpenNotifications }: HomeProps) => {
   const { incidents } = useIncidents();
   const { height } = useWindowDimensions();
   const mapRef = useRef<MapViewHandle>(null);
@@ -191,6 +193,8 @@ export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident }: H
               </Text>
             </Pressable>
           </View>
+
+          <BellButton onPress={onOpenNotifications} />
 
           <Pressable
             onPress={locate}
