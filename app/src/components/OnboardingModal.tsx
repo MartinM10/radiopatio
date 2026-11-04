@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../theme';
+import { askPushOnce } from '../lib/push';
 import { AppIcon } from './AppIcon';
 
 const STORAGE_KEY = 'av.onboarded.v1';
@@ -51,6 +52,8 @@ export const OnboardingModal: React.FC<Props> = ({
     } catch {}
     setInternalVisible(false);
     onDismiss?.();
+    // Tras la bienvenida pedimos permiso de notificaciones (una sola vez).
+    askPushOnce();
   };
 
   return (
