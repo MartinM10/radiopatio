@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '../components/AppIcon';
@@ -46,14 +46,30 @@ export const NotificationsScreen = ({ onClose, onOpenIncident }: Props) => {
   const [pending, setPending] = useState<{ lat: number; lng: number; suggestion: string | null } | null>(null);
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const askedOnOpen = useRef(false);
 
   const load = useCallback(async () => {
+    setLoadError(null);
     try {
       setSettings(await apiGetNotifySettings());
     } catch (e) {
       console.warn('[notificaciones] ajustes no disponibles:', e);
+      setLoadError(
+        e instanceof ApiError && e.status === 404
+          ? 'El servidor todavía no admite notificaciones. Inténtalo de nuevo más tarde.'
+          : e instanceof ApiError
+            ? e.message
+            : 'No se pudieron cargar los ajustes. Comprueba tu conexión.',
+      );
     }
-    setPush(await getPushStatus());
+    const status = await getPushStatus();
+    setPush(status);
+    // Entrar aquí es pedir notificaciones: si aún no hay permiso, se pide (una vez por apertura).
+    if (status === 'undetermined' && !askedOnOpen.current) {
+      askedOnOpen.current = true;
+      setPush(await registerForPush(true));
+    }
   }, []);
 
   useEffect(() => {
@@ -232,7 +248,17 @@ export const NotificationsScreen = ({ onClose, onOpenIncident }: Props) => {
         {/* ── Qué quiero que me avisen ────────────────────────────────── */}
         <Text style={[styles.section, { marginTop: 22 }]}>Avisarme de…</Text>
         {!settings ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 12 }} />
+          loadError ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>No se han podido cargar los ajustes</Text>
+              <Text style={styles.emptyText}>{loadError}</Text>
+              <Pressable onPress={load} accessibilityRole="button" hitSlop={8}>
+                <Text style={[styles.link, { marginTop: 6 }]}>Reintentar</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <ActivityIndicator color={colors.primary} style={{ marginTop: 12 }} />
+          )
         ) : (
           <View style={styles.card}>
             <Row
@@ -322,7 +348,9 @@ export const NotificationsScreen = ({ onClose, onOpenIncident }: Props) => {
             style={({ pressed }) => [styles.add, !canAddZone && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}
           >
             <AppIcon name="map-pin" color={colors.accent} size={18} />
-            <Text style={styles.addText}>{canAddZone || !settings ? 'Vigilar una zona' : 'Has llegado al máximo de zonas'}</Text>
+            <Text style={styles.addText}>
+              {!settings ? 'Vigilar una zona (disponible al cargar)' : canAddZone ? 'Vigilar una zona' : 'Has llegado al máximo de zonas'}
+            </Text>
           </Pressable>
         )}
       </ScrollView>

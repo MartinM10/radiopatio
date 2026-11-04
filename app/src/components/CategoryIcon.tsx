@@ -65,9 +65,9 @@ export const CategoryIcon: React.FC<Props> = ({
       {/* Agresión */}
       {id === 'agresion' && (
         <>
-          <Path d="M12 2L3 7v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7l-9-5z" {...p} />
-          <Line x1="12" y1="8" x2="12" y2="13" {...p} />
-          <Circle cx="12" cy="16.5" r="0.8" fill={color} />
+          <Path d="M12 2.5L4 6v6.5c0 4.7 3.3 8.3 8 9.5 4.7-1.2 8-4.8 8-9.5V6l-8-3.5z" {...p} />
+          <Line x1="12" y1="8.5" x2="12" y2="13" {...p} />
+          <Circle cx="12" cy="16.4" r="0.8" fill={color} />
         </>
       )}
 

@@ -178,21 +178,9 @@ export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident, onO
     <View style={styles.root}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Mapa vecinal</Text>
-            <Pressable
-              onPress={userLoc ? undefined : locate}
-              disabled={!!userLoc}
-              accessibilityRole={userLoc ? 'text' : 'button'}
-              style={styles.levelLine}
-            >
-              <View style={[styles.levelDot, { backgroundColor: level.color }]} />
-              <Text style={[styles.levelLabel, { color: level.color }]}>{level.label}</Text>
-              <Text style={styles.levelText} numberOfLines={1}>
-                · {level.text}
-              </Text>
-            </Pressable>
-          </View>
+          <Text style={styles.title} numberOfLines={1}>
+            Mapa vecinal
+          </Text>
 
           <BellButton onPress={onOpenNotifications} />
 
@@ -209,14 +197,30 @@ export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident, onO
             onPress={() => setFiltersOpen(true)}
             accessibilityRole="button"
             accessibilityLabel={filterCount > 0 ? `Filtros, ${filterCount} activos` : 'Filtros'}
-            style={({ pressed }) => [styles.filterBtn, filterCount > 0 && styles.filterBtnOn, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.iconBtn, filterCount > 0 && styles.filterBtnOn, pressed && { opacity: 0.85 }]}
           >
             <AppIcon name="filter" color={filterCount > 0 ? '#fff' : colors.text} size={18} />
-            <Text style={[styles.filterText, filterCount > 0 && { color: '#fff' }]}>
-              {filterCount > 0 ? `Filtros · ${filterCount}` : 'Filtros'}
-            </Text>
+            {filterCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{filterCount}</Text>
+              </View>
+            )}
           </Pressable>
         </View>
+
+        {/* Estado de la zona en su propia línea: con tres botones al lado se cortaba. */}
+        <Pressable
+          onPress={userLoc ? undefined : locate}
+          disabled={!!userLoc}
+          accessibilityRole={userLoc ? 'text' : 'button'}
+          style={styles.levelLine}
+        >
+          <View style={[styles.levelDot, { backgroundColor: level.color }]} />
+          <Text style={[styles.levelLabel, { color: level.color }]}>{level.label}</Text>
+          <Text style={styles.levelText} numberOfLines={2}>
+            · {level.text}
+          </Text>
+        </Pressable>
 
         <ActiveFilters
           selected={cats}
@@ -313,8 +317,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, gap: 8 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
-  levelLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, minHeight: 20 },
+  title: { flex: 1, color: colors.text, fontSize: 24, fontWeight: '800' },
+  levelLine: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 20 },
   levelDot: { width: 9, height: 9, borderRadius: 5 },
   levelLabel: { fontSize: 13, fontWeight: '800' },
   levelText: { flex: 1, color: colors.muted, fontSize: 13 },
@@ -328,19 +332,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  filterBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    height: 44,
-    paddingHorizontal: 14,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
   filterBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterText: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  filterBadge: { position: 'absolute', top: -3, right: -3, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: colors.text, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+  filterBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
   map: { flex: 1, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.line },
   panel: { backgroundColor: colors.bg, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, minHeight: 64 },
   panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },

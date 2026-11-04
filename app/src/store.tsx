@@ -12,6 +12,7 @@ import {
 } from './lib/api';
 import { ApiError } from './lib/api';
 import { parseStoredIncidents, pruneExpired } from './lib/dataQuality';
+import { askPushOnce } from './lib/push';
 
 const KEY = 'av.incidents.v1';
 /** Confirmaciones vecinales necesarias para quitar la etiqueta "sin confirmar". */
@@ -113,6 +114,8 @@ export const IncidentsProvider = ({ children }: { children: React.ReactNode }) =
     apiCreateIncident(p)
       .then((created) => {
         setIncidents((prev) => prev.map((item) => (item.id === tempId ? created : item)));
+        // Primer aviso publicado: buen momento para pedir permiso de notificaciones.
+        askPushOnce();
       })
       .catch((err) => {
         // Veracidad: si el servidor rechaza, el optimista se elimina y se
