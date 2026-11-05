@@ -66,12 +66,13 @@ export async function registerForPush(ask: boolean): Promise<PushStatus> {
   return status;
 }
 
-const ASKED_KEY = 'av.push_asked.v1';
+// v2: las builds con la v1 marcaban «ya preguntado» sin llegar a mostrar el diálogo en Android 13+.
+const ASKED_KEY = 'av.push_asked.v2';
 
 /**
- * Pide permiso de notificaciones UNA vez, en un momento con contexto (al
- * publicar el primer aviso: «te avisaremos si lo confirman»). Si el vecino lo
- * rechaza no se insiste; podrá activarlas desde la campana.
+ * Pide permiso de notificaciones UNA vez: tras la bienvenida, al arrancar si ya
+ * la vio, o al publicar un aviso si aún no se le preguntó. Si el vecino lo
+ * rechaza no se insiste por aquí; podrá activarlas desde la campana.
  */
 export async function askPushOnce(): Promise<void> {
   if (!pushSupported) return;

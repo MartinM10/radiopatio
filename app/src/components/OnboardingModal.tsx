@@ -39,6 +39,9 @@ export const OnboardingModal: React.FC<Props> = ({
       .then((val) => {
         if (!val) {
           setInternalVisible(true);
+        } else {
+          // Quien actualiza ya vio la bienvenida: se le pregunta al arrancar (una sola vez).
+          askPushOnce();
         }
       })
       .catch(() => {});
