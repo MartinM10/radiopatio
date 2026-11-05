@@ -3,13 +3,14 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { apiRegisterPushToken } from './api';
+import { PushStatus, toPushStatus } from './pushStatus';
+
+export type { PushStatus } from './pushStatus';
 
 /**
  * Push nativo (Expo). En web no hay push: la bandeja de la app sigue
  * funcionando porque el servidor la guarda siempre.
  */
-export type PushStatus = 'unsupported' | 'granted' | 'denied' | 'undetermined';
-
 export const pushSupported = Platform.OS === 'android' || Platform.OS === 'ios';
 
 let configured = false;
@@ -37,8 +38,7 @@ export async function configurePush(): Promise<void> {
 
 export async function getPushStatus(): Promise<PushStatus> {
   if (!pushSupported) return 'unsupported';
-  const { status } = await Notifications.getPermissionsAsync();
-  return status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined';
+  return toPushStatus(await Notifications.getPermissionsAsync());
 }
 
 /**
@@ -49,9 +49,10 @@ export async function registerForPush(ask: boolean): Promise<PushStatus> {
   if (!pushSupported) return 'unsupported';
   await configurePush();
   let status = await getPushStatus();
-  if (status !== 'granted' && ask && status !== 'denied') {
+  if (status === 'undetermined' && ask) {
     const res = await Notifications.requestPermissionsAsync();
-    status = res.status === 'granted' ? 'granted' : res.status === 'denied' ? 'denied' : 'undetermined';
+    // Tras preguntar, cualquier cosa distinta de «sí» es que no hay permiso ahora mismo.
+    status = res.status === 'granted' ? 'granted' : 'denied';
   }
   if (status !== 'granted') return status;
   try {
