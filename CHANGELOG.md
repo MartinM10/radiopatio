@@ -7,6 +7,14 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.5.1](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.5.0...radiopatio-v1.5.1) (2026-11-09)
+
+
+### 📦 Compilación y EAS
+
+* **app:** bump versionCode to 13 ([7d0e353](https://github.com/MartinM10/radiopatio/commit/7d0e35307311da67b29e4e8f958b8088dcd8fb1c))
+* **app:** bump versionCode to 14 ([2969cef](https://github.com/MartinM10/radiopatio/commit/2969cefc06f0902750192177929d9a4eb84f9f72))
+
 ## [1.5.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.4.0...radiopatio-v1.5.0) (2026-11-09)
 
 
