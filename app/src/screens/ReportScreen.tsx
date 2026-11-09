@@ -17,8 +17,8 @@ import { AppIcon } from '../components/AppIcon';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { useIdentity } from '../components/IdentityGate';
 import { LocationPicker } from '../components/LocationPicker';
-import { categories, categoryById } from '../data/categories';
-import { CategoryId, Zone } from '../data/types';
+import { categories, categoryById, isLifeThreatening } from '../data/categories';
+import { CategoryGroup, CategoryId, Zone } from '../data/types';
 import { MAX_ADDRESS, sanitizeAddress } from '../lib/address';
 import { apiReverseGeocode } from '../lib/api';
 import { getUserLocation } from '../lib/userLocation';
@@ -29,12 +29,32 @@ import { colors, radius, severityColor } from '../theme';
 const MIN = 10;
 const MAX = 280;
 
+type TabId = 'all' | 'seguridad' | 'servicios' | 'emergencias';
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'all', label: 'Todos' },
+  { id: 'seguridad', label: '🛡️ Seguridad' },
+  { id: 'servicios', label: '⚡ Servicios y vía' },
+  { id: 'emergencias', label: '🌧️ Emergencias' },
+];
+
+const PLACEHOLDER: Partial<Record<CategoryGroup, string>> = {
+  seguridad: 'Ej.: Han forzado varios coches en el tramo final de la calle…',
+  servicios: 'Ej.: Llevamos desde la mañana sin agua en toda la manzana…',
+  emergencias: 'Ej.: El agua cubre la calle y los coches no pueden pasar…',
+  general: 'Ej.: Cuenta qué has visto y desde cuándo…',
+};
+
+/** «Otro aviso» (grupo general) aparece junto a los servicios, como antes. */
+const inTab = (group: CategoryGroup | undefined, tab: TabId): boolean =>
+  tab === 'all' || (group ?? 'general') === tab || (tab === 'servicios' && group === 'general');
+
 export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
   const insets = useSafeAreaInsets();
   const { incidents, addIncident } = useIncidents();
   const { requireIdentity } = useIdentity();
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [activeTab, setActiveTab] = useState<'all' | 'seguridad' | 'servicios'>('all');
+  const [activeTab, setActiveTab] = useState<TabId>('all');
   const [cat, setCat] = useState<CategoryId | null>(null);
   const [zone, setZone] = useState<Zone | null>(null);
   const [text, setText] = useState('');
@@ -47,10 +67,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
   const [suggesting, setSuggesting] = useState(false);
   const streetTouched = useRef(false);
 
-  const displayedCategories = useMemo(() => {
-    if (activeTab === 'all') return categories;
-    return categories.filter((c) => (c.group ?? 'general') === activeTab || (activeTab === 'servicios' && c.group === 'general'));
-  }, [activeTab]);
+  const displayedCategories = useMemo(() => categories.filter((c) => inTab(c.group, activeTab)), [activeTab]);
 
   const applyPoint = (point: { lat: number; lng: number }, suggestion: string | null) => {
     setZone({ gx: 5, gy: 5, lat: point.lat, lng: point.lng });
@@ -124,39 +141,25 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
           <Text style={styles.q}>¿Qué ha ocurrido?</Text>
 
           <View style={styles.groupFilterRow}>
-            <Pressable
-              onPress={() => {
-                setActiveTab('all');
-                Haptics.selectionAsync().catch(() => {});
-              }}
-              style={[styles.groupFilterPill, activeTab === 'all' && styles.groupFilterPillActive]}
-            >
-              <Text style={[styles.groupFilterText, activeTab === 'all' && styles.groupFilterTextActive]}>
-                Todos ({categories.length})
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setActiveTab('seguridad');
-                Haptics.selectionAsync().catch(() => {});
-              }}
-              style={[styles.groupFilterPill, activeTab === 'seguridad' && styles.groupFilterPillActive]}
-            >
-              <Text style={[styles.groupFilterText, activeTab === 'seguridad' && styles.groupFilterTextActive]}>
-                🛡️ Seguridad (7)
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setActiveTab('servicios');
-                Haptics.selectionAsync().catch(() => {});
-              }}
-              style={[styles.groupFilterPill, activeTab === 'servicios' && styles.groupFilterPillActive]}
-            >
-              <Text style={[styles.groupFilterText, activeTab === 'servicios' && styles.groupFilterTextActive]}>
-                ⚡ Servicios y Vía (7)
-              </Text>
-            </Pressable>
+            {TABS.map((t) => {
+              const active = activeTab === t.id;
+              return (
+                <Pressable
+                  key={t.id}
+                  onPress={() => {
+                    setActiveTab(t.id);
+                    Haptics.selectionAsync().catch(() => {});
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={[styles.groupFilterPill, active && styles.groupFilterPillActive]}
+                >
+                  <Text style={[styles.groupFilterText, active && styles.groupFilterTextActive]}>
+                    {t.label} ({categories.filter((c) => inTab(c.group, t.id)).length})
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <View style={styles.grid}>
@@ -201,6 +204,24 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
             <CategoryIcon id={cat} color={colors.primary} size={20} />
             <Text style={styles.selCatText}>{categoryById(cat).label}</Text>
           </View>
+
+          {isLifeThreatening(cat) && (
+            <Pressable
+              style={styles.urgent}
+              onPress={() => Linking.openURL('tel:112').catch(() => {})}
+              accessibilityRole="button"
+              accessibilityLabel="Llamar al 112"
+            >
+              <View style={styles.urgentIconWrap}>
+                <AppIcon name="shield-alert" color={colors.primary} size={26} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.urgentTitle}>¿Hay alguien en peligro?</Text>
+                <Text style={styles.urgentText}>Llama primero al 112. Avisar aquí no moviliza a los servicios de emergencia.</Text>
+              </View>
+              <Text style={styles.urgentCall}>Llamar</Text>
+            </Pressable>
+          )}
 
           <Text style={styles.q}>¿Dónde ocurrió?</Text>
           {!zone ? (
@@ -260,7 +281,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
           <TextInput
             value={text}
             onChangeText={(t) => setText(t.slice(0, MAX))}
-            placeholder="Ej.: Han forzado varios coches en el tramo final de la calle…"
+            placeholder={PLACEHOLDER[categoryById(cat).group ?? 'general'] ?? PLACEHOLDER.general}
             placeholderTextColor={colors.muted}
             multiline
             style={[styles.input, problem ? { borderColor: colors.danger } : null]}
@@ -379,7 +400,7 @@ const styles = StyleSheet.create({
   urgentCall: { color: '#fff', backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, fontWeight: '800', overflow: 'hidden' },
   q: { color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 6 },
   qSub: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  groupFilterRow: { flexDirection: 'row', gap: 8, marginVertical: 4 },
+  groupFilterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 4 },
   groupFilterPill: {
     paddingHorizontal: 12,
     paddingVertical: 7,

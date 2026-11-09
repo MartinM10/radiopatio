@@ -7,7 +7,7 @@ import { BellButton } from '../components/BellButton';
 import { FilterSheet } from '../components/FilterSheet';
 import { IncidentRow } from '../components/IncidentRow';
 import { MapHex, MapView, MapViewHandle, SPAIN_VIEW } from '../components/MapView';
-import { categoryById } from '../data/categories';
+import { categoryById, countsForSafety } from '../data/categories';
 import { haversineMeters } from '../data/places';
 import { CategoryId, Incident } from '../data/types';
 import { trustWeight } from '../lib/dataQuality';
@@ -104,7 +104,8 @@ export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident, onO
     [filtered, userLoc],
   );
   // Veracidad (TRUST.md): los avisos sin confirmar pesan la mitad.
-  const score = nearby.reduce((s, i) => s + categoryById(i.category).severity * trustWeight(i), 0);
+  // Emergencias y clima no hacen «insegura» una zona: no suman al nivel.
+  const score = nearby.reduce((s, i) => (countsForSafety(i.category) ? s + categoryById(i.category).severity * trustWeight(i) : s), 0);
   const phrase = TIMEFRAME_PHRASE[timeframe];
   const plural = (n: number) => (n === 1 ? 'aviso' : 'avisos');
   const level = !userLoc

@@ -26,9 +26,10 @@ interface Props {
   onSort?: (s: SortMode) => void;
 }
 
-const GROUPS: { id: 'seguridad' | 'servicios'; label: string }[] = [
+const GROUPS: { id: 'seguridad' | 'servicios' | 'emergencias'; label: string }[] = [
   { id: 'seguridad', label: 'Seguridad y convivencia' },
   { id: 'servicios', label: 'Servicios y vía pública' },
+  { id: 'emergencias', label: 'Emergencias y clima' },
 ];
 
 const tap = () => Haptics.selectionAsync().catch(() => {});

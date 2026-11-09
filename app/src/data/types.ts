@@ -14,9 +14,14 @@ export type CategoryId =
   | 'calzada'
   | 'limpieza'
   | 'perdido'
+  | 'inundacion'
+  | 'incendio'
+  | 'derrumbe'
+  | 'arbol'
+  | 'calle_cortada'
   | 'otro';
 
-export type CategoryGroup = 'seguridad' | 'servicios' | 'general';
+export type CategoryGroup = 'seguridad' | 'servicios' | 'emergencias' | 'general';
 
 export interface Category {
   id: CategoryId;

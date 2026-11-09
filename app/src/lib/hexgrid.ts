@@ -1,5 +1,5 @@
 import { Incident } from '../data/types';
-import { categoryById } from '../data/categories';
+import { categoryById, countsForSafety } from '../data/categories';
 import { placeLabel } from '../data/places';
 import { readableAddress } from './address';
 import { CONFIRMED_AT } from './dataQuality';
@@ -142,9 +142,12 @@ export function buildHexGridForIncidents(
     // Veracidad (docs/TRUST.md §3): los avisos sin confirmar por vecinos
     // pesan la mitad; un aviso aislado sin verificar no dispara la alerta
     // por sí solo.
+    // Emergencias y clima no cuentan para el nivel de seguridad de la celda.
     const severityScore = data.incidents.reduce(
       (acc, inc) =>
-        acc + categoryById(inc.category).severity * (inc.confirmations >= CONFIRMED_AT ? 1 : 0.5),
+        countsForSafety(inc.category)
+          ? acc + categoryById(inc.category).severity * (inc.confirmations >= CONFIRMED_AT ? 1 : 0.5)
+          : acc,
       0,
     );
 
