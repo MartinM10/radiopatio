@@ -19,6 +19,14 @@ export const categories: Category[] = [
   { id: 'limpieza', label: 'Limpieza / residuos', emoji: '🗑️', severity: 1, hint: 'Contenedores desbordados o suciedad grave', group: 'servicios' },
   { id: 'perdido', label: 'Objeto / mascota', emoji: '🐾', severity: 1, hint: 'Mascota perdida o pertenencia extraviada', group: 'servicios' },
 
+  // Emergencias y clima: daños que un vecino puede ver con sus ojos. No cuentan
+  // para el nivel de seguridad de la zona y se guardan en el recuento diario.
+  { id: 'inundacion', label: 'Inundación', emoji: '🌊', severity: 3, hint: 'Calle, garaje o bajo inundado; balsa de agua peligrosa', group: 'emergencias' },
+  { id: 'incendio', label: 'Incendio / humo', emoji: '🔥', severity: 3, hint: 'Fuego o humo en un edificio, solar o monte', group: 'emergencias' },
+  { id: 'derrumbe', label: 'Derrumbe', emoji: '🧱', severity: 3, hint: 'Muro, cornisa, fachada o ladera que se ha caído o amenaza caer', group: 'emergencias' },
+  { id: 'arbol', label: 'Árbol caído', emoji: '🌳', severity: 2, hint: 'Árbol o rama grande caída en la calle o sobre algo', group: 'emergencias' },
+  { id: 'calle_cortada', label: 'Calle cortada', emoji: '🚫', severity: 1, hint: 'Paso cortado por accidente, obra, temporal o evento', group: 'emergencias' },
+
   // General
   { id: 'otro', label: 'Otro aviso', emoji: '📍', severity: 1, hint: 'Cualquier otra incidencia de interés vecinal', group: 'general' },
 ];

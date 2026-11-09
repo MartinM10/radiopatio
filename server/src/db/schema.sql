@@ -122,3 +122,19 @@ CREATE TABLE IF NOT EXISTS notifications (
     read_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_device ON notifications(device_id, created_at DESC);
+
+-- Municipio del aviso (de la geocodificación inversa del servidor). Solo se
+-- usa para el recuento diario y desaparece con el aviso.
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS municipality VARCHAR(80);
+
+-- Recuento diario anónimo: lo único que queda de un aviso tras purgarlo. Sin
+-- texto, calle, celda ni autor. municipality = '' si no se pudo determinar.
+CREATE TABLE IF NOT EXISTS incident_daily_counts (
+    day DATE NOT NULL,
+    municipality VARCHAR(80) NOT NULL,
+    category VARCHAR(32) NOT NULL,
+    total INTEGER NOT NULL DEFAULT 0,
+    confirmed INTEGER NOT NULL DEFAULT 0,
+    verified INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (day, municipality, category)
+);

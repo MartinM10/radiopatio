@@ -24,7 +24,7 @@ test('Fastify app starts and responds to /api/categories', async () => {
     assert.strictEqual(res.statusCode, 200);
     const body = JSON.parse(res.body);
     assert.ok(Array.isArray(body.data));
-    assert.strictEqual(body.data.length, 14);
+    assert.strictEqual(body.data.length, 19);
     assert.strictEqual(body.data[0].id, 'hogar');
   } finally {
     await app.close();

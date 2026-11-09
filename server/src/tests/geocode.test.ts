@@ -11,6 +11,9 @@ import { devHeaders } from './helpers';
 test.before(async () => {
   await runMigrations();
   geocodeTuning.minGapMs = 0;
+  // `npm test` apaga el geocodificador para que ningún test salga a Nominatim;
+  // este archivo lo enciende porque sustituye la red por una falsa.
+  config.geocoderEnabled = true;
 });
 
 test.after(async () => {

@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "test": "node --test --test-concurrency=1 dist/tests/*.js",
+    "test": "GEOCODER_ENABLED=0 node --test --test-concurrency=1 dist/tests/*.js",
     "check:parity": "node scripts/check-parity.mjs",
     "check:ratelimit": "node scripts/check-ratelimit.mjs"
   },

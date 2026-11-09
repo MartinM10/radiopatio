@@ -7,6 +7,7 @@ import { purgeExpiredIncidents } from '../db/purge';
 import { authenticateWrite, resolveReadHash } from '../lib/device';
 import { scheduleJudge } from '../lib/judge';
 import { notifyConfirmation, notifyNewIncident } from '../lib/notify';
+import { fillMunicipality } from '../lib/municipality';
 import { snapToHexGrid } from '../lib/geo';
 import {
   haversineKm,
@@ -34,6 +35,11 @@ const categoryEnum = z.enum([
   'calzada',
   'limpieza',
   'perdido',
+  'inundacion',
+  'incendio',
+  'derrumbe',
+  'arbol',
+  'calle_cortada',
   'otro',
 ]);
 
@@ -370,6 +376,9 @@ export async function incidentRoutes(app: FastifyInstance) {
     // El juez secundario (si está activo) puntúa de forma asíncrona,
     // sin bloquear la publicación ni rechazar nunca por sí solo.
     scheduleJudge(id, description, category);
+
+    // Municipio para el recuento diario, en segundo plano (no retrasa la respuesta).
+    void fillMunicipality(id, lat, lng);
 
     // Avisa a los vecinos cercanos y a quien vigila la zona. Un aviso en
     // cuarentena aún no es público: se notificará cuando se promocione.

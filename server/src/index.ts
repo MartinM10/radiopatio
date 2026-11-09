@@ -4,6 +4,7 @@ import { pool } from './db';
 import { runMigrations } from './db/migrate';
 import { seedIfEmpty } from './db/seed';
 import { purgeExpiredIncidents } from './db/purge';
+import { backfillMunicipalities } from './lib/municipality';
 
 async function start() {
   // Fail-closed: con secretos por defecto o débiles, producción no arranca.
@@ -35,7 +36,10 @@ async function start() {
 
   // Purga de retención: los caducados se eliminan físicamente (minimización RGPD).
   const purgeTimer = setInterval(() => {
-    purgeExpiredIncidents()
+    // Primero los municipios pendientes, para que lo que se purga ya cuente bien.
+    backfillMunicipalities()
+      .catch((err) => console.error('[municipio] reintento fallido:', err))
+      .then(() => purgeExpiredIncidents())
       .then((n) => {
         if (n > 0) console.log(`[retención] ${n} avisos caducados purgados`);
       })
