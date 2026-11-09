@@ -20,7 +20,7 @@ export const categories: Category[] = [
 
   // Emergencias y clima
   { id: 'inundacion', label: 'Inundación', emoji: '🌊', severity: 3, hint: 'Calle, garaje o bajo inundado; balsa de agua peligrosa', group: 'emergencias' },
-  { id: 'incendio', label: 'Incendio / humo', emoji: '🔥', severity: 3, hint: 'Fuego o humo en un edificio, solar o monte', group: 'emergencias' },
+  { id: 'incendio', label: 'Incendio / humo', emoji: '🔥', severity: 3, hint: 'Fuego o humo cerca de ti; si solo lo ves a lo lejos, no hace falta avisar', group: 'emergencias' },
   { id: 'derrumbe', label: 'Derrumbe', emoji: '🧱', severity: 3, hint: 'Muro, cornisa, fachada o ladera que se ha caído o amenaza caer', group: 'emergencias' },
   { id: 'arbol', label: 'Árbol caído', emoji: '🌳', severity: 2, hint: 'Árbol o rama grande caída en la calle o sobre algo', group: 'emergencias' },
   { id: 'calle_cortada', label: 'Calle cortada', emoji: '🚫', severity: 1, hint: 'Paso cortado por accidente, obra, temporal o evento', group: 'emergencias' },
