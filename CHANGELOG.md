@@ -7,6 +7,40 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.5.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.4.0...radiopatio-v1.5.0) (2026-11-09)
+
+
+### ✨ Funcionalidades
+
+* **app:** ask existing users for notification permission at launch ([8acb28d](https://github.com/MartinM10/radiopatio/commit/8acb28d65ed4228cd643e7b5dced0c54617bbec8))
+* **app:** ask for notification permission right after the welcome screen ([a5b49fd](https://github.com/MartinM10/radiopatio/commit/a5b49fddf0823ce3ef6ed7a30147acd195c4c952))
+* **app:** emergency and weather categories ([9a188af](https://github.com/MartinM10/radiopatio/commit/9a188af19724b31b6586cf1e4d947dff0feadce0))
+* **app:** notifications screen with inbox, alert settings and watched zones ([35062c0](https://github.com/MartinM10/radiopatio/commit/35062c0e53c2f066d203c53843770c219e3b3e03))
+* **server:** emergency and weather categories with anonymous daily counts ([6f03376](https://github.com/MartinM10/radiopatio/commit/6f033769cf031cb1cb99616c0e3cb7b47a6a0bb0))
+* **server:** in-app inbox and push notifications for confirmations, nearby and watched zones ([68eaadb](https://github.com/MartinM10/radiopatio/commit/68eaadb6e3de661d0675b19086e52e4f35f04440))
+
+
+### 🐛 Correcciones
+
+* **app:** clip-free shield icons, notification permission prompt and clearer settings errors ([287a0c9](https://github.com/MartinM10/radiopatio/commit/287a0c92568e16322336e435d47c9e0377723c17))
+* **app:** request notification permission on Android 13+ when it was never asked ([efa5f7c](https://github.com/MartinM10/radiopatio/commit/efa5f7cece794abb2d2216ff9583c46a84bd7573))
+* **app:** use a dedicated white icon for Android notifications ([a6aa097](https://github.com/MartinM10/radiopatio/commit/a6aa09706b0a5f033a4ad3bca5b3827cda32c923))
+* ask to report fires only when they are nearby ([84f81c9](https://github.com/MartinM10/radiopatio/commit/84f81c91b1ef2f52f09a09da1503bd75a6541ca0))
+* **landing:** point GitHub and licence links at the real repository ([2bb64f7](https://github.com/MartinM10/radiopatio/commit/2bb64f7c62cdad06f978d87eb8e1663d572619df))
+* **landing:** readable legal pages in light theme and a real status page ([0a3519e](https://github.com/MartinM10/radiopatio/commit/0a3519eb162dd9d75f3c19e31626b87c107b67ed))
+
+
+### 📝 Documentación
+
+* **landing:** cover push notifications, nearby area and watched zones in the privacy policy ([ae8610d](https://github.com/MartinM10/radiopatio/commit/ae8610dc3e7e6e7d9fbbd3c95ef8826f1f905fd6))
+* **landing:** describe the anonymous daily counts in the privacy policy ([6ecfaf9](https://github.com/MartinM10/radiopatio/commit/6ecfaf91d18bebde67b2876e49b42a52f0f2a040))
+
+
+### 📦 Compilación y EAS
+
+* **app:** bump versionCode to 11 ([3a28943](https://github.com/MartinM10/radiopatio/commit/3a28943e1bcb3daa5d4d1e466de3511989e9a570))
+* **app:** wire Firebase google-services.json for FCM push and bump versionCode to 10 ([c4c7e04](https://github.com/MartinM10/radiopatio/commit/c4c7e0422fa4fed4cf25a174f6f3806a643cf3cc))
+
 ## [1.4.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.3.0...radiopatio-v1.4.0) (2026-10-31)
 
 
