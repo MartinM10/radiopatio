@@ -49,6 +49,12 @@ SET device_hash = encode(sha256(convert_to('dev:' || id || ':' || $1, 'UTF8')), 
 WHERE device_hash IS NULL;
 `;
 
+// Avisos anteriores a la duración por categoría: conservan los 72 h que tenían.
+const EXPIRES_BACKFILL_SQL = `
+UPDATE incidents SET expires_at = created_at + make_interval(hours => $1)
+WHERE expires_at IS NULL;
+`;
+
 export async function runMigrations(): Promise<void> {
   console.log('Running database migrations...');
   const client = await pool.connect();
@@ -57,6 +63,7 @@ export async function runMigrations(): Promise<void> {
     await client.query(SCHEMA_SQL);
     await client.query(BACKFILL_SQL);
     await client.query(DEVICE_HASH_BACKFILL_SQL, [config.deviceSalt]);
+    await client.query(EXPIRES_BACKFILL_SQL, [config.incidentTtlHours]);
     await client.query('COMMIT');
     console.log('Database migrations completed successfully.');
   } catch (error) {

@@ -6,6 +6,7 @@ import {
   findDuplicate,
   levelForScore,
   textSimilarity,
+  CONFIRMED_AT,
   trustWeight,
   type DedupRecord,
 } from '../lib/quality';
@@ -90,9 +91,11 @@ test('geo: snapToHexGrid idempotente sobre el centro de la celda (misma clave)',
   assert.strictEqual(again.key, first.key);
 });
 
-test('trustWeight: confirmado = 1, sin confirmar = 0.5', () => {
-  assert.strictEqual(trustWeight({ confirmations: 2 }), 1);
-  assert.strictEqual(trustWeight({ confirmations: 1 }), 0.5);
+test('trustWeight: verificado = 1, sin verificar = 0.5 (umbral VERIFIED_AT)', () => {
+  assert.ok(CONFIRMED_AT >= 2, 'el umbral nunca baja de 2 vecinos');
+  assert.strictEqual(trustWeight({ confirmations: CONFIRMED_AT }), 1);
+  assert.strictEqual(trustWeight({ confirmations: CONFIRMED_AT - 1 }), 0.5);
+  assert.strictEqual(trustWeight({ confirmations: 0 }), 0.5);
 });
 
 test('levelForScore: fronteras del nivel de alerta (solo confirmados cuentan)', () => {

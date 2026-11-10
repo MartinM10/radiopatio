@@ -186,6 +186,7 @@ export async function deleteDeviceData(deviceId: string): Promise<void> {
     await client.query(`DELETE FROM incident_flags WHERE device_hash = $1`, [deviceHash]);
     // Los mensajes que escribió en avisos de otros (los de sus propios avisos caen con ellos).
     await client.query(`DELETE FROM incident_messages WHERE device_hash = $1`, [deviceHash]);
+    await client.query(`DELETE FROM incident_presence_votes WHERE device_hash = $1`, [deviceHash]);
     await client.query(`DELETE FROM devices WHERE id = $1`, [deviceId]);
     await client.query('COMMIT');
   } catch (err) {

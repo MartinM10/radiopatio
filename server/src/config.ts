@@ -15,6 +15,8 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL || DEV_DATABASE_URL,
   deviceSalt: process.env.DEVICE_SALT || DEV_DEVICE_SALT,
   corsOrigin: process.env.CORS_ORIGIN || '*',
+  // Duración por defecto de un aviso y plazo máximo de conservación de las
+  // coordenadas exactas. Cada categoría puede durar menos o más (ttlHours).
   incidentTtlHours: parseInt(process.env.INCIDENT_TTL_HOURS || '72', 10),
   maxFlagsBeforeHide: parseInt(process.env.MAX_FLAGS_BEFORE_HIDE || '3', 10),
   // Moderadores (docs/TRUST.md §3 capa 5). En producción, define ADMIN_TOKEN.
@@ -22,6 +24,9 @@ export const config = {
   logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'warn' : 'info'),
   // Fase 2: cuarentena de ráfagas y presencia (anti-teleport).
   quarantineThreshold: parseInt(process.env.QUARANTINE_THRESHOLD || '5', 10),
+  // Vecinos distintos que deben confirmar un aviso para considerarlo verificado
+  // (entre 2 y 20). Es la única fuente: servidor, estadísticas y app la leen de aquí.
+  verifiedAt: Math.min(20, Math.max(2, parseInt(process.env.VERIFIED_AT || '3', 10) || 3)),
   teleportKm: parseInt(process.env.TELEPORT_KM || '50', 10),
   teleportWindowMin: parseInt(process.env.TELEPORT_WINDOW_MIN || '120', 10),
   // Juez secundario (Myrmo-style): score-only, nunca gatekeeper.

@@ -2,12 +2,12 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db';
 import { snapToHexGrid } from '../lib/geo';
-import { levelForScore } from '../lib/quality';
+import { CONFIRMED_AT, MIN_ZONE_SAMPLE, levelForScore } from '../lib/quality';
 import { CategoryId } from '../types';
 
 /**
  * Estadística de zona con reglas de confianza (docs/TRUST.md §3):
- * - el score SOLO cuenta avisos confirmados por ≥ 2 vecinos,
+ * - el score SOLO cuenta avisos confirmados por ≥ VERIFIED_AT vecinos (3),
  * - exige muestra mínima antes de afirmar nada de un barrio,
  * - opera a nivel de celda hexagonal (~450 m).
  */
@@ -45,7 +45,7 @@ export async function zoneRoutes(app: FastifyInstance) {
     );
 
     const incidents = rows as HexRow[];
-    const confirmed = incidents.filter((r) => parseInt(String(r.confirmations_count), 10) >= 2);
+    const confirmed = incidents.filter((r) => parseInt(String(r.confirmations_count), 10) >= CONFIRMED_AT);
     const severityBy: Record<string, number> = {
       hogar: 3,
       agresion: 3,
@@ -71,7 +71,7 @@ export async function zoneRoutes(app: FastifyInstance) {
       score,
       confirmedCount: confirmed.length,
       totalCount: incidents.length,
-      sampleSufficient: confirmed.length >= 2,
+      sampleSufficient: confirmed.length >= MIN_ZONE_SAMPLE,
       level: levelForScore(score),
     };
   });

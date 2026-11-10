@@ -6,6 +6,7 @@ import { pool } from '../db';
 import { runMigrations } from '../db/migrate';
 import { purgeExpiredIncidents } from '../db/purge';
 import { setPushSender } from '../lib/notify';
+import { CONFIRMED_AT } from '../lib/quality';
 import { slugify } from '../routes/stats';
 import { devHeaders } from './helpers';
 
@@ -107,8 +108,8 @@ test('episodios: solo un moderador los crea y el balance une lo purgado con lo a
     assert.strictEqual((await post(body)).statusCode, 409, 'mismo nombre');
 
     // Un aviso activo hoy no entra en ese periodo; uno purgado antes de ayer sí.
-    const old = await publish(app, 'old', 'arbol', townA, 2);
-    await pool.query(`UPDATE incidents SET created_at = '2001-03-11 12:00:00+01' WHERE id = $1`, [old]);
+    const old = await publish(app, 'old', 'arbol', townA, CONFIRMED_AT);
+    await pool.query(`UPDATE incidents SET created_at = '2001-03-11 12:00:00+01', expires_at = '2001-03-12 12:00:00+01' WHERE id = $1`, [old]);
     await purgeExpiredIncidents();
 
     const detail = JSON.parse((await get(app, `/api/episodes/${slug}`)).body).data;
@@ -141,7 +142,7 @@ test('un aviso aún activo cuenta hoy y no se duplica al purgarse', async () => 
     assert.deepStrictEqual(live, [{ day: today, municipality: townB, category: 'derrumbe', total: 1, confirmed: 1, verified: 0 }]);
 
     // Al caducar pasa al recuento: la cifra no cambia.
-    await pool.query(`UPDATE incidents SET created_at = NOW() - INTERVAL '100 hours' WHERE id = $1`, [id]);
+    await pool.query(`UPDATE incidents SET created_at = NOW() - INTERVAL '100 hours', expires_at = NOW() - INTERVAL '1 hour' WHERE id = $1`, [id]);
     await purgeExpiredIncidents();
     const gone = await pool.query('SELECT 1 FROM incidents WHERE id = $1', [id]);
     assert.strictEqual(gone.rowCount, 0);

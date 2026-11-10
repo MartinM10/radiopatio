@@ -4,6 +4,7 @@ import { buildApp } from '../app';
 import { pool } from '../db';
 import { runMigrations } from '../db/migrate';
 import { PushMessage, setPushSender } from '../lib/notify';
+import { CONFIRMED_AT } from '../lib/quality';
 import { devHeaders } from './helpers';
 
 const sent: PushMessage[] = [];
@@ -101,6 +102,11 @@ test('confirmar un aviso avisa al autor (sin decir quién) y agrupa mientras no 
 
     const c2 = await app.inject({ method: 'POST', url: `/api/incidents/${inc.id}/confirm`, headers: v2 });
     assert.strictEqual(c2.statusCode, 200);
+    // Hasta alcanzar el umbral de verificación sigue siendo «un vecino ha confirmado».
+    for (let k = 3; k <= CONFIRMED_AT; k++) {
+      const more = await app.inject({ method: 'POST', url: `/api/incidents/${inc.id}/confirm`, headers: await devHeaders(`vecino${k}-${tag}`) });
+      assert.strictEqual(more.statusCode, 200);
+    }
     const box = await eventually(async () => {
       const b = await inbox(app, author);
       return b.items.find((n) => n.incidentId === inc.id)?.title === 'Tu aviso ya está verificado' ? b : null;

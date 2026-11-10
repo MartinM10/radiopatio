@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import test, { TestContext } from 'node:test';
 import { buildApp } from '../app';
+import { CONFIRMED_AT } from '../lib/quality';
 import { devHeaders } from './helpers';
 import { pool } from '../db';
 import { runMigrations } from '../db/migrate';
@@ -155,9 +156,9 @@ test('Estadística de zona: solo confirmados mueven la aguja y hace falta muestr
     assert.strictEqual(body.sampleSufficient, false);
     assert.strictEqual(body.level, 'tranquilo');
 
-    const b = device();
-    const c = device();
-    for (const d of [b, c]) {
+    // Hacen falta VERIFIED_AT vecinos distintos (3 por defecto) para que cuente como verificado.
+    const voters = Array.from({ length: CONFIRMED_AT }, () => device());
+    for (const d of voters) {
       const res = await app.inject({
         method: 'POST',
         url: `/api/incidents/${id}/confirm`,

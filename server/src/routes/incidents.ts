@@ -10,6 +10,7 @@ import { notifyConfirmation, notifyNewIncident } from '../lib/notify';
 import { fillMunicipality } from '../lib/municipality';
 import { InvalidPhotoError, processIncidentPhoto } from '../lib/photo';
 import { categories } from './categories';
+import { categoryTtlHours, liveSql } from '../lib/lifetime';
 import { snapToHexGrid } from '../lib/geo';
 import {
   haversineKm,
@@ -94,6 +95,8 @@ interface IncidentRowLike {
   hex_lat: number | null;
   hex_lng: number | null;
   has_photo?: boolean;
+  expires_at?: Date | string | null;
+  resolved_at?: Date | string | null;
 }
 
 /** Coordenada pública: SIEMPRE el centro de la celda hex (~450 m); jamás la exacta. */
@@ -134,6 +137,8 @@ const rowToIncident = (r: IncidentRowLike, deviceHash: string): Incident => {
     // llega aquí lo es. Sin esto la app no sabía si el chat estaba disponible
     // (quedaba undefined tras cualquier refresco de la lista).
     status: 'active',
+    expiresAt: r.expires_at ? new Date(r.expires_at).getTime() : createdMs + config.incidentTtlHours * 3_600_000,
+    resolved: Boolean(r.resolved_at),
   };
 };
 
@@ -161,12 +166,9 @@ export async function incidentRoutes(app: FastifyInstance) {
       'month': '30 days',
       'all': '365 days',
     };
-    const interval = timeframe ? intervalMap[timeframe] || `${config.incidentTtlHours} hours` : `${config.incidentTtlHours} hours`;
-
-    const conditions: string[] = [
-      `i.status = 'active'`,
-      `i.created_at >= NOW() - INTERVAL '${interval}'`,
-    ];
+    // Sin periodo se devuelve todo lo que sigue vivo (cada aviso tiene su caducidad).
+    const conditions: string[] = [liveSql('i.')];
+    if (timeframe) conditions.push(`i.created_at >= NOW() - INTERVAL '${intervalMap[timeframe] || `${config.incidentTtlHours} hours`}'`);
     const params: unknown[] = [deviceHash];
     let paramIndex = 2;
 
@@ -204,6 +206,8 @@ export async function incidentRoutes(app: FastifyInstance) {
         i.device_hash,
         i.hex_lat,
         i.hex_lng,
+        i.expires_at,
+        i.resolved_at,
         (i.photo IS NOT NULL) AS has_photo,
         (ic.device_hash IS NOT NULL) AS confirmed_by_me,
         (fl.device_hash IS NOT NULL) AS flagged_by_me
@@ -378,16 +382,19 @@ export async function incidentRoutes(app: FastifyInstance) {
     const now = new Date();
 
     // Cuarentena de ráfagas: si esta celda ya recibió muchos avisos en la
-    // última hora, el nuevo entra en cuarentena ('pending') y no aparece
-    // en listas ni en alertas hasta que un moderador lo apruebe o reciba
-    // 2 confirmaciones vecinales (auto-promoción en confirmIncident).
+    // última hora, el nuevo entra en cuarentena ('pending') y no aparece en
+    // listas ni en alertas hasta que un moderador lo apruebe. Un aviso en
+    // cuarentena es invisible, así que nadie puede confirmarlo: solo lo libera
+    // un moderador. Las emergencias (temporal, inundación…) quedan exentas: sus
+    // ráfagas son lo normal y justo lo que interesa contar.
     const recentInCell = await pool.query(
       `SELECT COUNT(*)::int AS n FROM incidents
        WHERE status IN ('active', 'pending') AND hex_key = $1
          AND created_at >= NOW() - INTERVAL '1 hour'`,
       [hex.key],
     );
-    const quarantined = (recentInCell.rows[0]?.n ?? 0) >= config.quarantineThreshold;
+    const isEmergency = categories.find((c) => c.id === category)?.group === 'emergencias';
+    const quarantined = !isEmergency && (recentInCell.rows[0]?.n ?? 0) >= config.quarantineThreshold;
     const initialStatus = quarantined ? 'pending' : 'active';
 
     if (quarantined) {
@@ -400,12 +407,13 @@ export async function incidentRoutes(app: FastifyInstance) {
 
     await pool.query(
       `INSERT INTO incidents
-        (id, category, grid_x, grid_y, description, created_at, confirmations_count, flags_count, status, device_hash, lat, lng, address, hex_key, hex_lat, hex_lng, photo, photo_mime)
-       VALUES ($1, $2, $3, $4, $5, $6, 0, 0, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+        (id, category, grid_x, grid_y, description, created_at, confirmations_count, flags_count, status, device_hash, lat, lng, address, hex_key, hex_lat, hex_lng, photo, photo_mime, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 0, 0, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
       [
         id, category, zone.gx, zone.gy, description, now, initialStatus, deviceHash, lat, lng,
         zone.address ?? null, hex.key, hex.centerLat, hex.centerLng,
         processedPhoto?.buffer ?? null, processedPhoto?.mime ?? null,
+        new Date(now.getTime() + categoryTtlHours(category) * 3_600_000),
       ]
     );
 
@@ -450,6 +458,8 @@ export async function incidentRoutes(app: FastifyInstance) {
       mine: true,
       status: initialStatus,
       hasPhoto: processedPhoto !== null,
+      expiresAt: now.getTime() + categoryTtlHours(category) * 3_600_000,
+      resolved: false,
     };
 
     return reply.status(201).send({ data: created });
@@ -466,14 +476,14 @@ export async function incidentRoutes(app: FastifyInstance) {
       SELECT
         i.id, i.category, i.grid_x, i.grid_y, i.lat, i.lng, i.address,
         i.description, i.created_at, i.confirmations_count, i.status, i.device_hash,
-        i.hex_lat, i.hex_lng,
+        i.hex_lat, i.hex_lng, i.expires_at, i.resolved_at,
         (i.photo IS NOT NULL) AS has_photo,
         (ic.device_hash IS NOT NULL) AS confirmed_by_me,
         (fl.device_hash IS NOT NULL) AS flagged_by_me
       FROM incidents i
       LEFT JOIN incident_confirmations ic ON ic.incident_id = i.id AND ic.device_hash = $2
       LEFT JOIN incident_flags fl ON fl.incident_id = i.id AND fl.device_hash = $2
-      WHERE i.id = $1 AND i.status = 'active'
+      WHERE i.id = $1 AND ${liveSql('i.')}
     `;
     const { rows } = await pool.query(sql, [id, deviceHash]);
     if (rows.length === 0) {
@@ -500,12 +510,13 @@ export async function incidentRoutes(app: FastifyInstance) {
         await client.query('BEGIN');
 
         const incRes = await client.query(
-          `SELECT id, device_hash, status, confirmations_count, category, description, address, hex_lat, hex_lng
+          `SELECT id, device_hash, status, confirmations_count, category, description, address, hex_lat, hex_lng,
+                  (${liveSql()}) AS live
            FROM incidents WHERE id = $1 FOR UPDATE`,
           [id]
         );
 
-        if (incRes.rowCount === 0 || incRes.rows[0].status !== 'active') {
+        if (incRes.rowCount === 0 || !incRes.rows[0].live) {
           await client.query('ROLLBACK');
           return reply.status(404).send({ error: 'INCIDENT_NOT_FOUND', message: 'Aviso no encontrado o inactivo' });
         }
@@ -553,24 +564,6 @@ export async function incidentRoutes(app: FastifyInstance) {
         await client.query('COMMIT');
 
         const newCount = parseInt(updateRes.rows[0].confirmations_count, 10);
-        const promoted = await client.query("UPDATE incidents SET status = 'active' WHERE id = $1 AND status = 'pending' AND confirmations_count >= 2 RETURNING id", [id]);
-        if ((promoted.rowCount ?? 0) > 0) {
-          await client.query("INSERT INTO moderation_log (incident_id, action, actor, reason) VALUES ($1, 'auto-promote', 'sistema', '2 confirmaciones vecinales')", [id]);
-          // Sale de la cuarentena: ahora sí es público y se avisa a la zona.
-          if (incident.hex_lat !== null && incident.hex_lng !== null) {
-            void notifyNewIncident({
-              id,
-              category: incident.category,
-              description: incident.description,
-              address: incident.address,
-              authorHash: incident.device_hash,
-              hexLat: Number(incident.hex_lat),
-              hexLng: Number(incident.hex_lng),
-            });
-          }
-        }
-
-        await client.query('COMMIT');
 
         // «Alguien ha validado tu aviso». Sin esperar: no frena la respuesta.
         void notifyConfirmation(id, incident.device_hash, incident.category, newCount);
