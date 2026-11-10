@@ -1,7 +1,8 @@
 /**
- * Purga de retención: los avisos caducados (incidentTtlHours, 72 h) se
- * eliminan físicamente de la base de datos (minimización RGPD). Las
- * confirmaciones y denuncias cascadin por FK.
+ * Purga de retención: los avisos caducados (expires_at, que depende de su
+ * categoría) se eliminan físicamente de la base de datos (minimización RGPD).
+ * Las confirmaciones, denuncias, mensajes y votos cascadan por FK. Las
+ * coordenadas exactas de los que siguen vivos se borran a las 72 h.
  *
  * Antes de borrarlos, en la MISMA sentencia, se suman al recuento diario
  * anónimo (día en hora de Madrid, municipio y categoría). Solo cuentan los
@@ -16,12 +17,12 @@ export async function purgeExpiredIncidents(): Promise<number> {
   const res = await pool.query(
     `WITH gone AS (
        DELETE FROM incidents
-       WHERE created_at < NOW() - INTERVAL '${config.incidentTtlHours} hours'
+       WHERE COALESCE(expires_at, created_at + make_interval(hours => $1)) < NOW()
        RETURNING category, created_at, status, confirmations_count, municipality
      ), counted AS (
        INSERT INTO incident_daily_counts AS c (day, municipality, category, total, confirmed, verified)
        SELECT (created_at AT TIME ZONE 'Europe/Madrid')::date, COALESCE(municipality, ''), category,
-              COUNT(*), COUNT(*) FILTER (WHERE confirmations_count >= 1), COUNT(*) FILTER (WHERE confirmations_count >= 2)
+              COUNT(*), COUNT(*) FILTER (WHERE confirmations_count >= 1), COUNT(*) FILTER (WHERE confirmations_count >= ${config.verifiedAt})
        FROM gone WHERE status = 'active'
        GROUP BY 1, 2, 3
        ON CONFLICT (day, municipality, category) DO UPDATE SET
@@ -31,6 +32,13 @@ export async function purgeExpiredIncidents(): Promise<number> {
        RETURNING 1
      )
      SELECT (SELECT COUNT(*) FROM gone)::int AS n`,
+    [config.incidentTtlHours],
+  );
+  // La posición exacta no sobrevive a las 72 h aunque el aviso siga: solo queda la celda pública.
+  await pool.query(
+    `UPDATE incidents SET lat = NULL, lng = NULL
+     WHERE lat IS NOT NULL AND created_at < NOW() - make_interval(hours => $1)`,
+    [config.incidentTtlHours],
   );
   // La última posición del dispositivo (control de presencia) vive lo mismo que un aviso.
   await pool.query(

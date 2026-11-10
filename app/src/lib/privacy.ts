@@ -49,11 +49,3 @@ export const timeAgo = (ts: number): string => {
   const d = Math.round(h / 24);
   return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
 };
-
-export const HOURS_VISIBLE = 72;
-
-export const isActive = (ts: number): boolean => Date.now() - ts < HOURS_VISIBLE * 3_600_000;
-
-/** 1 = reciente, 0 = a punto de caducar. */
-export const freshness = (ts: number): number =>
-  Math.max(0, 1 - (Date.now() - ts) / (HOURS_VISIBLE * 3_600_000));

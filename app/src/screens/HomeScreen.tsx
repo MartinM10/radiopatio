@@ -7,10 +7,9 @@ import { BellButton } from '../components/BellButton';
 import { FilterSheet } from '../components/FilterSheet';
 import { IncidentRow } from '../components/IncidentRow';
 import { MapHex, MapView, MapViewHandle, SPAIN_VIEW } from '../components/MapView';
-import { categoryById, countsForSafety } from '../data/categories';
 import { haversineMeters } from '../data/places';
 import { CategoryId, Incident } from '../data/types';
-import { trustWeight } from '../lib/dataQuality';
+import { LEVEL_INFO, levelForScore, zoneScore } from '../lib/zoneLevel';
 import {
   TIMEFRAME_PHRASE,
   Timeframe,
@@ -103,18 +102,16 @@ export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident, onO
         : [],
     [filtered, userLoc],
   );
-  // Veracidad (TRUST.md): los avisos sin confirmar pesan la mitad.
-  // Emergencias y clima no hacen «insegura» una zona: no suman al nivel.
-  const score = nearby.reduce((s, i) => (countsForSafety(i.category) ? s + categoryById(i.category).severity * trustWeight(i) : s), 0);
+  // Nivel de la zona: gravedad × peso de los avisos de seguridad de las últimas 72 h (lib/zoneLevel.ts).
+  const score = zoneScore(nearby);
   const phrase = TIMEFRAME_PHRASE[timeframe];
   const plural = (n: number) => (n === 1 ? 'aviso' : 'avisos');
+  const zone = LEVEL_INFO[levelForScore(score)];
   const level = !userLoc
     ? { label: 'Activa tu ubicación', color: colors.accent, text: `${filtered.length} ${plural(filtered.length)} ${phrase} en el mapa` }
-    : score < 4
-      ? { label: 'Tranquilo', color: colors.ok, text: `${nearby.length} ${plural(nearby.length)} ${phrase} cerca de ti` }
-      : score < 9
-        ? { label: 'Atención', color: colors.warn, text: `${nearby.length} ${plural(nearby.length)} ${phrase} cerca de ti` }
-        : { label: 'Alerta vecinal', color: colors.danger, text: `${nearby.length} ${plural(nearby.length)} ${phrase} cerca de ti` };
+    : score < 1
+      ? { label: zone.label, color: zone.color, text: 'Sin avisos de seguridad en las últimas 72 h cerca de ti' }
+      : { label: zone.label, color: zone.color, text: `${nearby.length} ${plural(nearby.length)} ${phrase} cerca de ti` };
 
   // ── Mapa: primera vista ───────────────────────────────────────────────────
   // Una sola vez: al conocer la ubicación, o (sin ella) al llegar los primeros avisos.

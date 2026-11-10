@@ -32,6 +32,8 @@ export interface Category {
   group?: CategoryGroup;
   /** Admite foto: solo donde no hay una persona señalada (objeto perdido, servicios, emergencias). */
   allowsPhoto?: boolean;
+  /** Cuánto dura el aviso si nadie lo amplía ni lo cierra (espejo de server/src/routes/categories.ts). */
+  ttlHours: number;
 }
 
 /** Zona / Ubicación en el mapa */
@@ -58,6 +60,12 @@ export interface Incident {
   mine?: boolean;
   status?: 'active' | 'hidden' | 'pending' | 'deleted';
   hasPhoto?: boolean;
+  /** Cuándo desaparece (ms). Se amplía con «sigue ahí» y se acorta al resolverse. */
+  expiresAt?: number;
+  /** El autor o los vecinos lo han dado por resuelto: desaparece en pocas horas. */
+  resolved?: boolean;
+  /** Mi respuesta a «¿sigue ahí?»: true = sigue, false = ya no está; ausente si no he respondido. */
+  presenceVote?: boolean;
 }
 
 /** Mensaje del chat anónimo de un aviso: nadie ve quién escribe, solo si es propio. */

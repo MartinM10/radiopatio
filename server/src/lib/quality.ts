@@ -1,3 +1,4 @@
+import { config } from '../config';
 import { CategoryId, Incident } from '../types';
 
 /**
@@ -22,8 +23,8 @@ export const DUP_WINDOW_MIN = 45;
 export const DUP_SIMILARITY = 0.75;
 
 // ── Confianza (docs/TRUST.md §3 capa 3) ─────────────────────────────────────
-/** Confirmaciones vecinales para considerar un aviso verificado. */
-export const CONFIRMED_AT = 2;
+/** Confirmaciones vecinales para considerar un aviso verificado (VERIFIED_AT, por defecto 3). */
+export const CONFIRMED_AT = config.verifiedAt;
 /** Muestra mínima de avisos confirmados para publicar estadística de zona. */
 export const MIN_ZONE_SAMPLE = 2;
 /** Peso de un aviso sin confirmar en métricas agregadas. */
@@ -115,5 +116,12 @@ export const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: numb
 
 export type ZoneLevel = 'tranquilo' | 'moderado' | 'atencion' | 'alerta';
 
+/**
+ * Nivel de una zona (la app usa la misma escala en la tarjeta y en el mapa).
+ * Los puntos son gravedad × peso (1 verificado, 0,5 sin verificar), y solo
+ * cuentan los avisos de seguridad de las últimas 72 h. Así una agresión
+ * verificada (3) ya es «atención», una sin verificar (1,5) es «moderado», y una
+ * farola rota no cambia nada.
+ */
 export const levelForScore = (score: number): ZoneLevel =>
-  score === 0 ? 'tranquilo' : score <= 3 ? 'moderado' : score <= 8 ? 'atencion' : 'alerta';
+  score < 1 ? 'tranquilo' : score < 3 ? 'moderado' : score < 6 ? 'atencion' : 'alerta';

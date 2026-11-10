@@ -8,6 +8,7 @@ import { deviceRoutes } from './routes/devices';
 import { geocodeRoutes } from './routes/geocode';
 import { healthRoutes } from './routes/health';
 import { incidentRoutes } from './routes/incidents';
+import { lifetimeRoutes } from './routes/lifetime';
 import { messageRoutes } from './routes/messages';
 import { moderationRoutes } from './routes/moderation';
 import { notificationRoutes } from './routes/notifications';
@@ -72,6 +73,7 @@ export function buildApp(): FastifyInstance {
   app.register(deviceRoutes);
   app.register(geocodeRoutes);
   app.register(incidentRoutes);
+  app.register(lifetimeRoutes);
   app.register(messageRoutes);
   app.register(moderationRoutes);
   app.register(notificationRoutes);

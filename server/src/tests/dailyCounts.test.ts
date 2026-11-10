@@ -8,6 +8,7 @@ import { purgeExpiredIncidents } from '../db/purge';
 import { geocodeTuning, setGeocoderFetch } from '../lib/geocode';
 import { backfillMunicipalities } from '../lib/municipality';
 import { setPushSender } from '../lib/notify';
+import { CONFIRMED_AT } from '../lib/quality';
 import { devHeaders } from './helpers';
 
 // Municipio inventado y único por ejecución: la BD persiste entre ejecuciones.
@@ -65,7 +66,7 @@ async function municipalityOf(id: string): Promise<string | null> {
 }
 
 const expire = (ids: string[]) =>
-  pool.query(`UPDATE incidents SET created_at = NOW() - INTERVAL '100 hours' WHERE id = ANY($1)`, [ids]);
+  pool.query(`UPDATE incidents SET created_at = NOW() - INTERVAL '100 hours', expires_at = NOW() - INTERVAL '1 hour' WHERE id = ANY($1)`, [ids]);
 
 const countsFor = async (municipality: string, category: string) => {
   const { rows } = await pool.query(
@@ -113,8 +114,8 @@ test('al purgar, el aviso se suma al recuento diario y no queda nada más de él
       assert.strictEqual(r.statusCode, 200, r.body);
     };
     await confirm(confirmed, 'witness-1');
-    await confirm(verified, 'witness-1');
-    await confirm(verified, 'witness-2');
+    // «Verificado» exige VERIFIED_AT vecinos distintos (3 por defecto).
+    for (let k = 1; k <= CONFIRMED_AT; k++) await confirm(verified, `witness-${k}`);
 
     // Uno ocultado por moderación: no cuenta.
     const hidden = await publish(app, 'count-d', 'inundacion');

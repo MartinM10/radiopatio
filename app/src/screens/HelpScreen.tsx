@@ -16,7 +16,7 @@ const rules = [
   ['Cuenta qué pasó, no quién', 'Nunca nombres, apodos, matrículas, teléfonos ni descripciones por origen o etnia.'],
   ['Solo lo que has visto', 'No compartas rumores. Si dudas, no publiques.'],
   ['Cero justicia por tu mano', 'Avisar no es investigar ni enfrentarse. Llama al 112.'],
-  ['Anónimo para tus vecinos y temporal', 'Nadie ve quién publica. Ubicación solo por zonas de ~450 m. Los avisos desaparecen a las 72 h.'],
+  ['Anónimo para tus vecinos y temporal', 'Nadie ve quién publica. Ubicación solo por zonas de ~450 m. Los avisos desaparecen solos, de 12 horas a 7 días según el tipo.'],
 ];
 
 export const HelpScreen = ({ onOpenOnboarding }: { onOpenOnboarding?: () => void }) => {

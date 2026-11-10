@@ -10,7 +10,8 @@ import { Incident, IncidentMessage, messageAuthorLabel } from '../data/types';
 import { areaName } from '../data/neighborhood';
 import { readableAddress } from '../lib/address';
 import { ApiError, apiAppealIncident, apiGetMessages, apiPostMessage, incidentPhotoUrl, incidentShareUrl } from '../lib/api';
-import { HOURS_VISIBLE, checkText, timeAgo } from '../lib/privacy';
+import { expiryLabel, shouldAskPresence } from '../lib/lifetime';
+import { checkText, timeAgo } from '../lib/privacy';
 import { useIncidents } from '../store';
 import { colors, font, radius, severityColor, severityLabel, shadow } from '../theme';
 
@@ -23,16 +24,9 @@ interface Props {
 
 const tap = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
-const expiresIn = (createdAt: number): string => {
-  const left = Math.max(0, HOURS_VISIBLE * 3_600_000 - (Date.now() - createdAt));
-  const h = Math.floor(left / 3_600_000);
-  if (h >= 1) return `Caduca en ${h} h`;
-  return `Caduca en ${Math.max(1, Math.round(left / 60_000))} min`;
-};
-
 export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props) => {
   const insets = useSafeAreaInsets();
-  const { incidents, confirm, flag, isConfirmed } = useIncidents();
+  const { incidents, confirm, flag, resolve, stillThere, isConfirmed } = useIncidents();
   const { requireIdentity } = useIdentity();
   const incident = incidents.find((i) => i.id === incidentId);
 
@@ -58,7 +52,7 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
         {header}
         <View style={styles.gone}>
           <Text style={styles.goneTitle}>Este aviso ya no está disponible</Text>
-          <Text style={styles.goneText}>Los avisos desaparecen a las 72 horas o cuando se ocultan tras varias denuncias.</Text>
+          <Text style={styles.goneText}>Los avisos desaparecen solos al caducar (de 12 horas a 7 días según el tipo), al resolverse o cuando se ocultan tras varias denuncias.</Text>
         </View>
       </View>
     );
@@ -90,6 +84,35 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
         },
       },
     ]);
+
+  const onResolve = () =>
+    Alert.alert('¿Ya está resuelto?', 'El aviso se marcará como resuelto y desaparecerá en un par de horas.', [
+      { text: 'Todavía no', style: 'cancel' },
+      {
+        text: 'Sí, resuelto',
+        onPress: () => {
+          resolve(incident.id);
+          tap();
+        },
+      },
+    ]);
+
+  const onPresence = async (here: boolean) => {
+    if (!(await requireIdentity())) return;
+    tap();
+    const res = await stillThere(incident.id, here);
+    if (!res) return;
+    Alert.alert(
+      'Gracias',
+      res.resolved
+        ? 'Varios vecinos dicen que ya no está: el aviso se cerrará en un par de horas.'
+        : here && res.extended
+          ? 'Hemos ampliado el aviso para que siga visible más tiempo.'
+          : here
+            ? 'Anotado: el aviso sigue ahí.'
+            : 'Anotado: si más vecinos coinciden, el aviso se cerrará.',
+    );
+  };
 
   const onAppeal = () =>
     apiAppealIncident(incident.id)
@@ -130,7 +153,13 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
               <AppIcon name="clock" color={colors.muted} size={12} />
               <Text style={styles.pillText}>{timeAgo(incident.createdAt)}</Text>
             </View>
-            <View style={styles.pill}>
+            {incident.resolved && (
+              <View style={[styles.pill, styles.pillOk]}>
+                <AppIcon name="check" color={colors.ok} size={12} strokeWidth={2.6} />
+                <Text style={[styles.pillText, { color: colors.ok }]}>Resuelto</Text>
+              </View>
+            )}
+            <View style={[styles.pill, verified && styles.pillOk]}>
               <AppIcon name={verified ? 'shield-check' : 'clock'} color={verified ? colors.ok : colors.muted} size={12} />
               <Text style={[styles.pillText, verified && { color: colors.ok }]}>
                 {verified ? `Confirmado (${incident.confirmations})` : 'Sin confirmar'}
@@ -156,7 +185,7 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
             </View>
             <View style={styles.rule} />
             <Text style={styles.desc}>{incident.description}</Text>
-            <Text style={styles.expiry}>{expiresIn(incident.createdAt)}</Text>
+            <Text style={styles.expiry}>{expiryLabel(incident)}</Text>
           </View>
 
           <View style={styles.actions}>
@@ -167,9 +196,17 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
                 </Pressable>
               ) : (
                 <View style={styles.mineBox}>
-                  <Text style={styles.mineText}>Este aviso es tuyo. Otros vecinos pueden confirmarlo.</Text>
+                  <Text style={styles.mineText}>
+                    {incident.resolved
+                      ? 'Has dado este aviso por resuelto. Desaparecerá en un par de horas.'
+                      : 'Este aviso es tuyo. Otros vecinos pueden confirmarlo.'}
+                  </Text>
                 </View>
               )
+            ) : incident.resolved ? (
+              <View style={styles.mineBox}>
+                <Text style={styles.mineText}>Este aviso se ha dado por resuelto y desaparecerá en un par de horas.</Text>
+              </View>
             ) : (
               <Pressable
                 onPress={onConfirm}
@@ -194,6 +231,28 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
               </Pressable>
             )}
           </View>
+
+          {incident.mine && incident.status !== 'hidden' && !incident.resolved && (
+            <Pressable onPress={onResolve} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.85 }]}>
+              <AppIcon name="check" color={colors.ok} size={16} strokeWidth={2.6} />
+              <Text style={styles.secondaryText}>Ya está resuelto</Text>
+            </Pressable>
+          )}
+
+          {shouldAskPresence(incident) && (
+            <View style={styles.presence}>
+              <Text style={styles.presenceTitle}>¿Sigue ahí?</Text>
+              <Text style={styles.presenceText}>Este aviso está a punto de caducar. Si pasas cerca, cuéntanos si todavía se ve.</Text>
+              <View style={styles.presenceRow}>
+                <Pressable onPress={() => onPresence(true)} accessibilityRole="button" style={({ pressed }) => [styles.presenceBtn, styles.presenceYes, pressed && { opacity: 0.85 }]}>
+                  <Text style={styles.presenceYesText}>Sí, sigue ahí</Text>
+                </Pressable>
+                <Pressable onPress={() => onPresence(false)} accessibilityRole="button" style={({ pressed }) => [styles.presenceBtn, styles.presenceNo, pressed && { opacity: 0.85 }]}>
+                  <Text style={styles.presenceNoText}>Ya no está</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
 
           {incident.status === 'active' && <Chat incidentId={incident.id} requireIdentity={requireIdentity} />}
 
@@ -314,6 +373,7 @@ const styles = StyleSheet.create({
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.75)' },
   pillText: { color: colors.muted, fontSize: 12, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  pillOk: { backgroundColor: 'rgba(16,185,129,0.16)' },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: 16, gap: 10, ...shadow.card },
   place: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   placeMain: { color: colors.text, fontSize: 16, fontFamily: 'PlusJakartaSans_800ExtraBold' },
@@ -357,6 +417,17 @@ const styles = StyleSheet.create({
   square: { width: 54, height: 54, borderRadius: 27, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', ...shadow.card },
   primaryDone: { backgroundColor: 'rgba(16,185,129,0.12)' },
   primaryText: { color: '#fff', fontSize: 16, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  secondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary + '66' },
+  secondaryText: { color: colors.text, fontSize: 15, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  presence: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: 16, gap: 8, ...shadow.card },
+  presenceTitle: { color: colors.text, fontSize: 16, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  presenceText: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, lineHeight: 19 },
+  presenceRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  presenceBtn: { flex: 1, minHeight: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
+  presenceYes: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+  presenceYesText: { color: colors.primary, fontSize: 14, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  presenceNo: { backgroundColor: colors.surface, borderColor: colors.line },
+  presenceNoText: { color: colors.textMuted, fontSize: 14, fontFamily: 'PlusJakartaSans_800ExtraBold' },
   mineBox: { flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md, padding: 14 },
   mineText: { color: colors.textMuted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   flag: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, minHeight: 44 },

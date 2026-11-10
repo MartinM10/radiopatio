@@ -1,6 +1,6 @@
 # Trabajo pendiente de Radio Patio
 
-Actualizado el 10 de noviembre de 2026 para quien retome el proyecto, persona o agente. Cada tarea es independiente y dice qué tocar y cómo saber que está hecha. Antes de empezar lee `AGENTS.md` y `app/AGENTS.md`.
+Actualizado el 10 de noviembre de 2026 (tarde) para quien retome el proyecto, persona o agente. Cada tarea es independiente y dice qué tocar y cómo saber que está hecha. Antes de empezar lee `AGENTS.md` y `app/AGENTS.md`.
 
 Reglas que valen para todas:
 
@@ -14,27 +14,28 @@ Reglas que valen para todas:
 
 | Rama | Contiene | Estado |
 |---|---|---|
-| `main` (`1e87960`) | Notificaciones, categorías de emergencias, recuento diario, chat, fotos, compartir | Desplegado en el servidor |
-| `backlog-server` | Recibos de Expo, estadísticas y episodios, numeración del chat, borrado de mensajes al borrar la identidad, balance de daños, política de privacidad, arreglo del margen móvil de la web | Probado (91 tests de servidor, 49 de app). Sin fusionar ni desplegar |
-| `redesign-ui` | Rediseño visual claro de la app, más todo lo de `backlog-server` | Probado en navegador a 360 px. Sin probar en un móvil |
+| `main` | Notificaciones, categorías de emergencias, recuento diario, chat, fotos, compartir, recibos de Expo, episodios y balance, privacidad | Desplegado en el servidor (`43ad6d5`) |
+| `trust-lifetimes` | Duración por tipo, «¿sigue ahí?» y «resuelto», umbral de verificación único (3), cuarentena sin emergencias, nivel de zona solo con seguridad, borradores de episodio | Probado (108 tests de servidor, 63 de app). Sin fusionar ni desplegar |
+| `redesign-ui` | Rediseño visual claro de la app y `versionCode` 15 (sin lo de `trust-lifetimes`) | Probado en navegador a 360 px. Sin probar en un móvil |
 
-Orden recomendado: fusionar `backlog-server` en `main`, desplegar el servidor y copiar la web; después probar `redesign-ui` en Android y fusionarla.
+Orden recomendado: fusionar `trust-lifetimes` en `main`, desplegar el servidor y copiar la web; después fusionar `main` en `redesign-ui` (conflictos previsibles en `IncidentDetailScreen.tsx`, `ReportScreen.tsx`, `HelpScreen.tsx` y los estilos: en esa rama cada `fontWeight` es una `fontFamily` de Plus Jakarta) y probarla en Android.
 
-## Hecho en `backlog-server` (para revisar)
+## Hecho en `trust-lifetimes` (para revisar)
 
-- **Recibos de Expo** (`server/src/lib/notify.ts`): los tickets se guardan y sus recibos se leen a los 15 minutos; los errores se registran sin el token, `DeviceNotRegistered` borra el token y `pushStats` cuenta aciertos y fallos. Todo el envío pasa por `sendPush`.
-- **Estadísticas y episodios** (`server/src/routes/stats.ts`, `lib/stats.ts`): `GET /api/stats/daily`, `/api/stats/municipalities`, `/api/episodes`, `/api/episodes/:slug` y, con token de administración, `POST` y `DELETE /api/admin/episodes`. El balance une lo purgado con lo activo. Guía en `docs/EPISODIOS.md`.
-- **Balance de daños** (`landing/balance.html`): lista de episodios y detalle por categoría y por día, con el aviso de que son datos de vecinos y no oficiales.
-- **Chat**: cada mensaje lleva `fromAuthor` y `participant`, y la app muestra «Tú», «Autor del aviso» o «Vecino N».
-- **Fallo de privacidad corregido**: `deleteDeviceData` no borraba los mensajes escritos en avisos de otros.
-- **Política y Términos** (`landing/privacidad.html`, `eliminar-cuenta.html`, `terminos.html`): fotos, chat, balance público y Cloudflare como tercero.
-- **Web**: el contenido de todas las páginas tocaba el borde de la pantalla en móvil (`.content-box` anulaba el margen de `.container`).
-- **Tests**: `security.test.ts` fallaba 1 de cada 6 ejecuciones porque sus celdas aleatorias colisionaban en la base de desarrollo; la caja es ahora 36 veces mayor.
+- **Duración por tipo** (`server/src/lib/lifetime.ts`, `expires_at`): de 12 horas (incendio, ruido) a 7 días (farolas, asfalto, limpieza, objeto perdido, derrumbe, calle cortada). Un aviso caducado deja de servirse antes de purgarse. Las coordenadas exactas se borran a las 72 h aunque el aviso siga.
+- **«¿Sigue ahí?»** (`POST /api/incidents/:id/still-there`): en la segunda mitad de su vida, un vecino distinto del autor amplía el aviso la mitad de su duración (una vez por cuenta, tope de 3 veces la duración). Con `VERIFIED_AT` vecinos que dicen «ya no está» (y más que los que dicen que sigue) se cierra.
+- **«Ya está resuelto»** (`POST /api/incidents/:id/resolve`): solo el autor; desaparece a las 2 horas.
+- **Umbral de verificación único** (`VERIFIED_AT`, 3 por defecto): servidor, estadísticas, notificaciones y app lo leen de `GET /api/config`. Antes estaba escrito a mano en unos 12 sitios.
+- **Cuarentena de ráfagas**: las emergencias quedan exentas, y se quita el código que intentaba liberar un aviso «con 2 confirmaciones», que no podía ejecutarse porque un aviso en cuarentena es invisible y nadie puede confirmarlo.
+- **Nivel de zona**: una sola escala para la tarjeta y el mapa (menos de 1 tranquilo, de 1 a 3 moderado, de 3 a 6 atención, 6 o más alerta) y solo cuentan los avisos de seguridad de las últimas 72 h. Una agresión verificada ya es «atención».
+- **Borradores de episodio**: el servidor propone un episodio privado ante un pico de avisos de emergencias; un moderador lo publica (`docs/EPISODIOS.md`).
+- Todos los textos que decían «72 horas» o «2 vecinos» (app, web, README, docs).
 
 ## Tareas del dueño
 
-- Fusionar `backlog-server` en `main` y desplegar el servidor. La migración añade la tabla `episodes`.
-- Copiar la web a producción: `ssh myrmo-prod 'cp ~/radiopatio/landing/*.html ~/ops-proxy/radiopatio/'`. Hasta entonces el pie sigue con el icono antiguo, los enlaces compartidos llevan a la portada y la política no menciona fotos ni chat.
+- Fusionar `trust-lifetimes` en `main` y desplegar el servidor. La migración añade `expires_at`, `resolved_at`, la tabla `incident_presence_votes` y las columnas de borrador de `episodes`; los avisos existentes conservan 72 h.
+- Copiar la web a producción: `ssh myrmo-prod 'cd ~/radiopatio && git pull --ff-only -q && cp landing/*.html ~/ops-proxy/radiopatio/'`.
+- Opcional: poner `ADMIN_WEBHOOK_URL` en `deploy/.env` para que te llegue el aviso de cada borrador de episodio, y ajustar `VERIFIED_AT`, `EPISODE_MIN_NOTICES` y `EPISODE_MIN_CONFIRMED` si hace falta.
 - Actualizar el formulario de Seguridad de los datos de Play: **fotos** (recogidas, funcionalidad de la aplicación, opcionales) y **mensajes** (contenido generado por el usuario). Ver `docs/LEGAL.md`.
 - Subir `versionCode` y lanzar la build `preview` desde `redesign-ui` para probar el rediseño en un móvil.
 - Revocar la clave de Myrmo y el token de Expo que quedaron escritos en el chat de la sesión.
@@ -57,8 +58,8 @@ Hoy el push a `main` solo lanza los tests. El servidor se despliega a mano por S
 - **Qué hacer:** Android App Links. Servir `/.well-known/assetlinks.json` desde la web con la huella SHA-256 del certificado de firma (la de Play App Signing), añadir `intentFilters` con `autoVerify` en `app/app.json` y resolver el enlace en `App.tsx` con `Linking` para abrir el detalle. Si el aviso no está en la lista local, pedirlo con `GET /api/incidents/:id`.
 - **Bloqueado por:** la huella del certificado, que solo se ve en Play Console.
 
-### 3. Avisos de larga duración
-Una calle cortada por obras dura semanas y el aviso caduca a las 72 h. El dueño decidió dejarlo así por ahora. Si cambia de idea: fecha de fin opcional solo en `calle_cortada`, con un máximo de 30 días.
+### 3. Preguntar «¿sigue ahí?» sin que abran el aviso
+Hoy la pregunta solo sale dentro del detalle del aviso. Lo natural, como en las apps de tráfico, es preguntarlo al pasar cerca: al abrir la app con la ubicación, si hay a menos de 400 m un aviso en su segunda mitad de vida que el usuario no ha respondido (`shouldAskPresence` en `app/src/lib/lifetime.ts`), mostrar una tarjeta con los dos botones. Una notificación push para esto exigiría saber dónde está el vecino a todas horas, y no se hace.
 
 ### 4. Vista previa del enlace compartido
 `landing/a.html` carga el aviso con JavaScript, así que WhatsApp no muestra una tarjeta al pegar el enlace. Para tenerla, el servidor tendría que devolver la página con etiquetas Open Graph (`og:title`, `og:description`) y pedirle a Caddy que enrute `a.html` hacia el servidor. Toca `~/ops-proxy/Caddyfile` en `myrmo-prod`, que comparte máquina con Myrmo: es decisión del dueño.

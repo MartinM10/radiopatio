@@ -141,6 +141,7 @@ ORDER BY i.judge_score DESC NULLS LAST, i.flags_count DESC, i.created_at DESC
         },
         policy: {
           ttlHours: config.incidentTtlHours,
+          verifiedAt: config.verifiedAt,
           maxFlagsBeforeHide: config.maxFlagsBeforeHide,
           quarantineThreshold: config.quarantineThreshold,
         },

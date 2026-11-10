@@ -54,8 +54,8 @@ clara: **es la vía que mataría este producto**. Razones:
 3. **Legal**: los avisos tocan datos de infracciones penales (RGPD art. 10);
    cualquier comercialización añade riesgo sancionador de la AEPD que ya ha
    multado por esto.
-4. **Valor real limitado**: tras agregación, celdas de 150 m y caducidad a
-   72 h, el dato bruto vale poco; el activo es la *confianza* de la
+4. **Valor real limitado**: tras agregación, celdas de 150 m y caducidad corta
+   (de 12 h a 7 días), el dato bruto vale poco; el activo es la *confianza* de la
    comunidad, y eso no se vende dos veces.
 
 ### Vías de ingresos compatibles (de más a menos recomendada)

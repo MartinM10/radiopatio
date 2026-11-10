@@ -93,6 +93,13 @@ está el vecino; añadir QA de presencia es fase 2).
    (`app/src/lib/hexgrid.ts` usa `trustWeight`) y **no cuentan** en la
    estadística de zona del servidor (`GET /api/zones/alert` solo suma
    confirmados). Un aviso aislado sin verificar no dispara una alerta solo.
+   «Verificado» son `VERIFIED_AT` confirmaciones de vecinos distintos (3 por
+   defecto; es un único valor del servidor, que la app lee de `GET /api/config`).
+   El **nivel de la zona** (tranquilo / moderado / atención / alerta) suma
+   gravedad × peso solo de los avisos de **seguridad** de las últimas 72 h:
+   una agresión verificada ya es «atención», una sin verificar «moderado», y una
+   farola rota o un árbol caído no lo mueven (`app/src/lib/zoneLevel.ts` y
+   `levelForScore` en `server/src/lib/quality.ts`).
 2. **Muestra mínima**: `GET /api/zones/alert` incluye `sampleSufficient`
    (≥ 2 avisos confirmados); sin muestra suficiente, la estadística no afirma
    nada del barrio.
@@ -102,13 +109,17 @@ está el vecino; añadir QA de presencia es fase 2).
    hexagonal dentro de 45 min (categoría igual + similitud de texto ≥ 0,75)
    se rechaza con 409 invitando a *confirmar* el existente, contra **todas**
    las cuentas.
-5. **Fases futuras**: cuarentena de ráfagas (K avisos nuevos en una celda en
-   1 h → revisión), clustering de dispositivos por IP/concurrente.
+5. **Cuarentena de ráfagas** ✅: si una celda recibe `QUARANTINE_THRESHOLD`
+   avisos (5) en una hora, los siguientes quedan pendientes hasta que un
+   moderador los apruebe. Un aviso pendiente es invisible, así que **no se puede
+   confirmar**: solo lo libera un moderador. Las **emergencias** (inundación,
+   incendio…) están exentas, porque sus ráfagas son lo normal en un temporal.
+6. **Fases futuras**: clustering de dispositivos por IP/concurrente.
 
 ### Capa 4 — Confianza progresiva y señal inversa
 
-- **Hoy**: los avisos nacen «sin confirmar» y pesan 0,5 hasta 2
-  confirmaciones vecinales.
+- **Hoy**: los avisos nacen «sin confirmar» y pesan 0,5 hasta `VERIFIED_AT`
+  confirmaciones vecinales (3).
 - **Fase 2 (con cuentas)**: reputación por pseudónimo — tras k confirmaciones
   recibidas y días de actividad, peso pleno; avisos denunciados repetidamente
   como falsos → peso hacia 0 y cola de moderación. Nunca se borra el historial

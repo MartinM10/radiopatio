@@ -23,6 +23,7 @@ import { LocationPicker } from '../components/LocationPicker';
 import { categories, categoryById, isLifeThreatening } from '../data/categories';
 import { CategoryGroup, CategoryId, Zone } from '../data/types';
 import { MAX_ADDRESS, sanitizeAddress } from '../lib/address';
+import { formatDuration } from '../lib/lifetime';
 import { apiReverseGeocode } from '../lib/api';
 import { getUserLocation } from '../lib/userLocation';
 import { checkText } from '../lib/privacy';
@@ -257,6 +258,9 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
             <CategoryIcon id={cat} color={colors.primary} size={20} />
             <Text style={styles.selCatText}>{categoryById(cat).label}</Text>
           </View>
+          <Text style={styles.durationNote}>
+            Se mostrará {formatDuration(categoryById(cat).ttlHours)}; los vecinos pueden ampliarlo si sigue ahí.
+          </Text>
 
           {isLifeThreatening(cat) && (
             <Pressable
@@ -432,7 +436,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
             <Text style={styles.selCatText}>{categoryById(cat).label}</Text>
           </View>
           <Text style={styles.okText}>
-            Tu aviso es anónimo y estará visible 72 horas para mantener informada a la comunidad. Aparecerá como «sin confirmar» hasta que otros vecinos lo verifiquen.
+            Tu aviso es anónimo y estará visible {formatDuration(categoryById(cat).ttlHours)}, y más si los vecinos dicen que sigue ahí. Aparecerá como «sin confirmar» hasta que otros vecinos lo verifiquen. Cuando se resuelva, puedes marcarlo como resuelto desde su pantalla.
           </Text>
           <View style={styles.legal}>
             <Text style={styles.legalText}>
@@ -533,6 +537,7 @@ const styles = StyleSheet.create({
   tileTitle: { color: colors.text, fontSize: 15, fontFamily: 'PlusJakartaSans_800ExtraBold' },
   tileHint: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11, lineHeight: 15 },
   selCat: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.line },
+  durationNote: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, marginTop: -6 },
   selCatText: { color: colors.text, fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13 },
   locCard: { gap: 10, backgroundColor: colors.surface, borderRadius: radius.lg, padding: 16, ...shadow.card },
   locText: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, lineHeight: 19 },

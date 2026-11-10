@@ -171,4 +171,26 @@ CREATE TABLE IF NOT EXISTS episodes (
     ends_on DATE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Duración de cada aviso. expires_at nace de la categoría y puede ampliarse
+-- («sigue ahí») o acortarse al resolverse. Las coordenadas exactas (lat/lng) se
+-- borran a las 72 h aunque el aviso dure más: lo que sigue público es la celda.
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_incidents_expires_at ON incidents(expires_at);
+
+-- «¿Sigue ahí?»: un voto por cuenta y aviso (here = true: sigue; false: ya no está).
+CREATE TABLE IF NOT EXISTS incident_presence_votes (
+    incident_id VARCHAR(36) NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
+    device_hash VARCHAR(64) NOT NULL,
+    here BOOLEAN NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (incident_id, device_hash)
+);
+
+-- Episodios sugeridos por el servidor al detectar un pico de avisos de emergencias:
+-- nacen como borrador (privado) hasta que un moderador los publica.
+ALTER TABLE episodes ADD COLUMN IF NOT EXISTS status VARCHAR(10) NOT NULL DEFAULT 'published';
+ALTER TABLE episodes ADD COLUMN IF NOT EXISTS reason TEXT;
+ALTER TABLE episodes ADD COLUMN IF NOT EXISTS suggested_at TIMESTAMPTZ;
 `;

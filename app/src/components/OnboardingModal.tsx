@@ -110,7 +110,7 @@ export const OnboardingModal: React.FC<Props> = ({
               <View style={styles.featureTextCol}>
                 <Text style={styles.featureTitle}>Colaboración, no policía (112)</Text>
                 <Text style={styles.featureDesc}>
-                  Los avisos se eliminan a las 72 h. No sustituye la denuncia formal. Ante peligro inmediato, llama siempre al 112.
+                  Los avisos desaparecen solos, de 12 horas a 7 días según el tipo. No sustituye la denuncia formal. Ante peligro inmediato, llama siempre al 112.
                 </Text>
               </View>
             </View>

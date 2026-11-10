@@ -16,7 +16,7 @@
 | Ubicación = dato personal | RGPD | Celdas hexagonales de ~450 m derivadas en el servidor: la API devuelve el centro de la celda, **nunca el GPS exacto** (ni siquiera al propio autor) |
 | Difamación, injurias, calumnias | Código Penal arts. 205-210 (*) | Filtro de identificación, botón de denuncia de abuso, aviso de «solo lo que has visto» |
 | Odio / discriminación | CP art. 510 (*) | Filtro de descriptores por origen/etnia; moderación |
-| Denuncias falsas / pánico | CP art. 456 (*) | Etiqueta «sin confirmar», confirmación vecinal, caducidad 72 h |
+| Denuncias falsas / pánico | CP art. 456 (*) | Etiqueta «sin confirmar», confirmación vecinal, caducidad por tipo |
 | Manipulación de estadísticas de un barrio (ataque Sybil, fines especulativos) | DSA (abusos de plataforma), CP art. 456 (*) | Plan de pseudonimato y confianza progresiva: docs/TRUST.md. En el prototipo ya hay esquema v2 con pseudónimos, deduplicación y pesos de confianza |
 | Responsabilidad de la plataforma por contenido de usuarios | Reglamento (UE) 2022/2065 (DSA), LSSI (*) | Canal de notificación y retirada, política de moderación (pendiente en backend) |
 | Confusión con un servicio de emergencias | — | Banner «Llama al 112», aviso de que no es una denuncia |
