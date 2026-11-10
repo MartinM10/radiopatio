@@ -74,5 +74,6 @@ Hoy la única barrera es limitar las categorías que admiten foto y el botón de
 
 ### 8. Calidad del código
 - La app no tiene configuración de ESLint aunque `app/AGENTS.md` pide pasar el lint.
+- En `IncidentDetailScreen.tsx` la rama `incident.status === 'hidden'` («Recurrir ocultación») no se alcanza nunca: la lista solo devuelve avisos activos, así que un autor no ve sus avisos ocultados. Para que el recurso tenga sentido hace falta un endpoint con los avisos propios ocultados.
 - `npm audit` avisa de vulnerabilidades en Fastify 4 y zod. Subir a Fastify 5 es un cambio mayor: hacerlo en una rama con todos los tests.
 - Los recibos de Expo se guardan en memoria: si el servidor se reinicia se pierden los pendientes (solo sirven para ver fallos).

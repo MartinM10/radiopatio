@@ -489,7 +489,6 @@ const styles = StyleSheet.create({
   urgentText: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, marginTop: 2 },
   urgentCall: { color: '#fff', backgroundColor: colors.alert, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, fontFamily: 'PlusJakartaSans_800ExtraBold', overflow: 'hidden' },
   q: { color: colors.text, fontSize: 22, letterSpacing: -0.3, fontFamily: 'PlusJakartaSans_800ExtraBold', marginTop: 6 },
-  qSub: { color: colors.muted, fontSize: 13, fontFamily: 'PlusJakartaSans_600SemiBold' },
   groupFilterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 4 },
   groupFilterPill: {
     paddingHorizontal: 12,
@@ -559,8 +558,6 @@ const styles = StyleSheet.create({
     fontFamily: 'PlusJakartaSans_500Medium', fontSize: 15,
   },
   streetHint: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, lineHeight: 16 },
-  zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  zoneText: { color: colors.accent, fontSize: 12, fontFamily: 'PlusJakartaSans_600SemiBold' },
   input: {
     minHeight: 110,
     textAlignVertical: 'top',
