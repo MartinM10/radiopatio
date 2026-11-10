@@ -98,10 +98,12 @@ test('trustWeight: verificado = 1, sin verificar = 0.5 (umbral VERIFIED_AT)', ()
   assert.strictEqual(trustWeight({ confirmations: 0 }), 0.5);
 });
 
-test('levelForScore: fronteras del nivel de alerta (solo confirmados cuentan)', () => {
+test('levelForScore: fronteras del nivel de zona (gravedad × peso, solo seguridad)', () => {
   assert.strictEqual(levelForScore(0), 'tranquilo');
-  assert.strictEqual(levelForScore(3), 'moderado');
-  assert.strictEqual(levelForScore(4), 'atencion');
-  assert.strictEqual(levelForScore(8), 'atencion');
-  assert.strictEqual(levelForScore(9), 'alerta');
+  assert.strictEqual(levelForScore(0.5), 'tranquilo', 'un vandalismo sin verificar no basta');
+  assert.strictEqual(levelForScore(1), 'moderado');
+  assert.strictEqual(levelForScore(1.5), 'moderado', 'una agresión sin verificar ya no es «tranquilo»');
+  assert.strictEqual(levelForScore(3), 'atencion', 'una agresión verificada es «atención»');
+  assert.strictEqual(levelForScore(5.5), 'atencion');
+  assert.strictEqual(levelForScore(6), 'alerta');
 });

@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { config } from '../config';
 import { pool } from '../db';
 import { isAdmin } from '../lib/admin';
 import { slugify } from '../lib/episodes';
@@ -115,6 +116,8 @@ export async function statsRoutes(app: FastifyInstance) {
       data: {
         ...ep,
         ...summarize(stats),
+        /** Vecinos distintos necesarios para que un aviso cuente como verificado. */
+        verifiedAt: config.verifiedAt,
         // Los avisos aún activos (menos de 72 h) también cuentan: el balance está al día.
         asOf: new Date().toISOString(),
       },

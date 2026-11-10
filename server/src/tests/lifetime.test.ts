@@ -256,6 +256,32 @@ test('las emergencias no entran en cuarentena por ráfaga; el resto sí', async 
   }
 });
 
+test('el nivel de zona solo cuenta avisos de seguridad: una farola verificada no lo mueve', async () => {
+  const app = buildApp();
+  try {
+    const level = async (cell: { lat: number; lng: number }) =>
+      JSON.parse((await app.inject({ method: 'GET', url: `/api/zones/alert?lat=${cell.lat}&lng=${cell.lng}` })).body) as { score: number; level: string; confirmedCount: number };
+    const verify = async (id: string, who: string) => {
+      for (let k = 1; k <= CONFIRMED_AT; k++) assert.strictEqual((await post(app, `/api/incidents/${id}/confirm`, `${who}-${k}`)).statusCode, 200);
+    };
+
+    const lampCell = spot();
+    const lamp = await publish(app, 'zone-lamp', 'alumbrado', lampCell);
+    await verify(lamp.id, 'zone-lamp-v');
+    const lampZone = await level(lampCell);
+    assert.strictEqual(lampZone.confirmedCount, 1, 'está verificada');
+    assert.deepStrictEqual([lampZone.score, lampZone.level], [0, 'tranquilo'], 'pero no es un dato de seguridad');
+
+    const hitCell = spot();
+    const hit = await publish(app, 'zone-hit', 'agresion', hitCell);
+    await verify(hit.id, 'zone-hit-v');
+    const hitZone = await level(hitCell);
+    assert.deepStrictEqual([hitZone.score, hitZone.level], [3, 'atencion'], 'una agresión verificada ya es «atención»');
+  } finally {
+    await app.close();
+  }
+});
+
 test('la configuración pública lleva el umbral de verificación', async () => {
   const app = buildApp();
   try {

@@ -117,6 +117,7 @@ test('episodios: solo un moderador los crea y el balance une lo purgado con lo a
     assert.deepStrictEqual(detail.totals, { total: 10 + 4 + 5 + 1, confirmed: 6 + 1 + 3 + 1, verified: 2 + 0 + 1 + 1 });
     assert.deepStrictEqual(detail.byCategory[0], { category: 'arbol', total: 16, confirmed: 10, verified: 4 });
     assert.deepStrictEqual(detail.byDay.map((d: { day: string }) => d.day), ['2001-03-10', '2001-03-11']);
+    assert.strictEqual(detail.verifiedAt, CONFIRMED_AT, 'la página dice cuántos vecinos son «verificado»');
     assert.ok(!JSON.stringify(detail).includes(townB), 'otro municipio no cuenta');
 
     const list = JSON.parse((await get(app, '/api/episodes')).body).data as { slug: string }[];

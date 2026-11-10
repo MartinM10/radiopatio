@@ -175,7 +175,7 @@ test('Estadística de zona: solo confirmados mueven la aguja y hace falta muestr
     assert.strictEqual(body.confirmedCount, 1);
     assert.strictEqual(body.score, 3, 'severidad agresion = 3, ya confirmado');
     assert.strictEqual(body.sampleSufficient, false, 'una muestra no basta');
-    assert.strictEqual(body.level, 'moderado');
+    assert.strictEqual(body.level, 'atencion', 'una agresión verificada (3 puntos) es «atención»');
   } finally {
     await cleanup(ids);
     await app.close();

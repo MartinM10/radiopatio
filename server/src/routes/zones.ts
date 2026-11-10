@@ -3,11 +3,11 @@ import { z } from 'zod';
 import { pool } from '../db';
 import { snapToHexGrid } from '../lib/geo';
 import { CONFIRMED_AT, MIN_ZONE_SAMPLE, levelForScore } from '../lib/quality';
-import { CategoryId } from '../types';
+import { categories } from './categories';
 
 /**
  * Estadística de zona con reglas de confianza (docs/TRUST.md §3):
- * - el score SOLO cuenta avisos confirmados por ≥ VERIFIED_AT vecinos (3),
+ * - el score SOLO cuenta avisos de seguridad confirmados por ≥ VERIFIED_AT vecinos (3),
  * - exige muestra mínima antes de afirmar nada de un barrio,
  * - opera a nivel de celda hexagonal (~450 m).
  */
@@ -46,25 +46,12 @@ export async function zoneRoutes(app: FastifyInstance) {
 
     const incidents = rows as HexRow[];
     const confirmed = incidents.filter((r) => parseInt(String(r.confirmations_count), 10) >= CONFIRMED_AT);
-    const severityBy: Record<string, number> = {
-      hogar: 3,
-      agresion: 3,
-      vehiculo: 2,
-      hurto: 2,
-      vandalismo: 1,
-      sospechoso: 1,
-      altercado: 1,
-      corte_agua: 1,
-      corte_luz: 1,
-      alumbrado: 1,
-      calzada: 1,
-      limpieza: 1,
-      perdido: 1,
-      otro: 1,
-    };
+    // Solo los avisos de seguridad dicen algo de la seguridad de un barrio: farolas,
+    // cortes de agua o un árbol caído no mueven el nivel.
+    const severityBy = new Map(categories.filter((c) => c.group === 'seguridad').map((c) => [c.id as string, c.severity as number]));
     // El score público solo cuenta lo verificado: un aviso sin confirmar
     // no debe mover la aguja del barrio por sí solo.
-    const score = confirmed.reduce((s, r) => s + (severityBy[r.category as CategoryId] ?? 1), 0);
+    const score = confirmed.reduce((s, r) => s + (severityBy.get(r.category) ?? 0), 0);
 
     return {
       hex: { key: hex.key, centerLat: hex.centerLat, centerLng: hex.centerLng },
