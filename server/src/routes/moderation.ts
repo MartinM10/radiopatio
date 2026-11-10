@@ -1,7 +1,7 @@
-import crypto from 'crypto';
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { config } from '../config';
+import { isAdmin } from '../lib/admin';
 import { authenticateWrite } from '../lib/device';
 import { pool } from '../db';
 import { purgeExpiredIncidents } from '../db/purge';
@@ -18,14 +18,6 @@ const resolveSchema = z.object({
 });
 
 export async function moderationRoutes(app: FastifyInstance) {
-  const isAdmin = (req: FastifyRequest): boolean => {
-    const token = req.headers['x-admin-token'];
-    if (typeof token !== 'string') return false;
-    const a = Buffer.from(token);
-    const b = Buffer.from(config.adminToken);
-    return a.length === b.length && crypto.timingSafeEqual(a, b);
-  };
-
   // GET /api/admin/moderation — cola de avisos denunciados (activos u ocultos)
   app.get('/api/admin/moderation', async (req: FastifyRequest, reply: FastifyReply) => {
     if (!isAdmin(req)) {
