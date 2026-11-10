@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { categories, countsForSafety, isLifeThreatening } from '../src/data/categories';
+import { categories, categoryById, countsForSafety, isLifeThreatening } from '../src/data/categories';
 import { Incident } from '../src/data/types';
 import { buildHexGridForIncidents } from '../src/lib/hexgrid';
 
@@ -38,5 +38,15 @@ describe('emergencias y clima', () => {
 
     const robbed = buildHexGridForIncidents([at('hogar'), at('hogar'), at('agresion')], false);
     expect(robbed[0].level).not.toBe('tranquilo');
+  });
+});
+
+describe('foto en los avisos', () => {
+  test('solo donde no hay una persona señalada: objeto perdido, servicios y emergencias', () => {
+    const withPhoto = ['perdido', 'corte_agua', 'corte_luz', 'alumbrado', 'calzada', 'limpieza', 'inundacion', 'incendio', 'derrumbe', 'arbol', 'calle_cortada'];
+    const withoutPhoto = ['hogar', 'vehiculo', 'hurto', 'agresion', 'vandalismo', 'sospechoso', 'altercado', 'otro'];
+    for (const id of withPhoto) expect(categoryById(id as Incident['category']).allowsPhoto).toBe(true);
+    for (const id of withoutPhoto) expect(categoryById(id as Incident['category']).allowsPhoto).toBeFalsy();
+    expect(withPhoto.length + withoutPhoto.length).toBe(categories.length);
   });
 });

@@ -30,6 +30,8 @@ export interface Category {
   severity: Severity;
   hint: string;
   group?: CategoryGroup;
+  /** Admite foto: solo donde no hay una persona señalada (objeto perdido, servicios, emergencias). */
+  allowsPhoto?: boolean;
 }
 
 /** Zona / Ubicación en el mapa */
@@ -55,4 +57,13 @@ export interface Incident {
   /** Creado en este dispositivo. */
   mine?: boolean;
   status?: 'active' | 'hidden' | 'pending' | 'deleted';
+  hasPhoto?: boolean;
+}
+
+/** Mensaje del chat anónimo de un aviso: nadie ve quién escribe, solo si es propio. */
+export interface IncidentMessage {
+  id: number;
+  body: string;
+  createdAt: number;
+  mine: boolean;
 }

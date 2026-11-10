@@ -22,7 +22,9 @@ export type AppIconName =
   | 'chevron-right'
   | 'chevron-down'
   | 'trash'
-  | 'x';
+  | 'x'
+  | 'camera'
+  | 'send';
 
 interface Props {
   name: AppIconName;
@@ -178,6 +180,19 @@ export const AppIcon: React.FC<Props> = ({
         <>
           <Line x1="18" y1="6" x2="6" y2="18" {...p} />
           <Line x1="6" y1="6" x2="18" y2="18" {...p} />
+        </>
+      )}
+
+      {name === 'camera' && (
+        <>
+          <Path d="M4 8h3l1.6-2.2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" {...p} />
+          <Circle cx="12" cy="13.5" r="3.4" {...p} />
+        </>
+      )}
+
+      {name === 'send' && (
+        <>
+          <Path d="M4 12l16-7-6.5 16-2.7-6.8L4 12z" {...p} />
         </>
       )}
     </Svg>

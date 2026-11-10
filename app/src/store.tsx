@@ -24,7 +24,7 @@ interface Store {
   incidents: Incident[];
   ready: boolean;
   refresh: () => Promise<void>;
-  addIncident: (p: { category: CategoryId; zone: Zone; description: string }) => Incident;
+  addIncident: (p: { category: CategoryId; zone: Zone; description: string; photo?: string }) => Incident;
   confirm: (id: string) => void;
   flag: (id: string) => void;
   reset: () => void;
@@ -108,6 +108,7 @@ export const IncidentsProvider = ({ children }: { children: React.ReactNode }) =
       createdAt: Date.now(),
       confirmations: 0,
       mine: true,
+      hasPhoto: Boolean(p.photo),
     };
     setIncidents((prev) => [inc, ...prev]);
 

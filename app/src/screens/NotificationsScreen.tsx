@@ -89,7 +89,7 @@ export const NotificationsScreen = ({ onClose, onOpenIncident }: Props) => {
 
   const fail = (e: unknown) => Alert.alert('No se pudo guardar', e instanceof ApiError ? e.message : 'Inténtalo de nuevo en un momento.');
 
-  const toggle = async (key: 'confirmations' | 'watched', value: boolean) => {
+  const toggle = async (key: 'confirmations' | 'watched' | 'messages', value: boolean) => {
     tap();
     setSettings((s) => (s ? { ...s, [key]: value } : s));
     try {
@@ -280,6 +280,13 @@ export const NotificationsScreen = ({ onClose, onOpenIncident }: Props) => {
               text="Avisos nuevos en los sitios de la lista de abajo, aunque no estés allí."
               value={settings.watched}
               onChange={(v) => toggle('watched', v)}
+            />
+            <Row
+              border
+              title="Mensajes en el chat"
+              text="Cuando alguien te escribe en el chat anónimo de un aviso en el que participas."
+              value={settings.messages}
+              onChange={(v) => toggle('messages', v)}
             />
           </View>
         )}

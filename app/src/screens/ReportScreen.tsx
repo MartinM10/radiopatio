@@ -1,7 +1,10 @@
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -58,6 +61,10 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
   const [cat, setCat] = useState<CategoryId | null>(null);
   const [zone, setZone] = useState<Zone | null>(null);
   const [text, setText] = useState('');
+  // Foto opcional (solo en categorías sin una persona que retratar, ver allowsPhoto):
+  // se manda en base64 y el servidor la reprocesa (recomprime y quita el EXIF/GPS).
+  const [photo, setPhoto] = useState<{ uri: string; base64: string } | null>(null);
+  const [pickingPhoto, setPickingPhoto] = useState(false);
   const [ack, setAck] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -105,12 +112,57 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
     if (!canSend || !cat || !zone) return;
     // Publicar exige identidad verificada (se pide una sola vez).
     if (!(await requireIdentity())) return;
-    addIncident({ category: cat, zone: { ...zone, address: sanitizeAddress(street) || undefined }, description: text });
+    addIncident({
+      category: cat,
+      zone: { ...zone, address: sanitizeAddress(street) || undefined },
+      description: text,
+      photo: categoryById(cat).allowsPhoto ? photo?.base64 : undefined,
+    });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setStep(3);
   };
 
   const back = () => (step === 2 ? setStep(1) : onClose());
+
+  const pickPhoto = async (from: 'camera' | 'library') => {
+    Haptics.selectionAsync().catch(() => {});
+    setPickingPhoto(true);
+    try {
+      const perm =
+        from === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          from === 'camera' ? 'Sin permiso de cámara' : 'Sin permiso para tus fotos',
+          'Actívalo en Ajustes del móvil si quieres añadir una foto.',
+        );
+        return;
+      }
+      const options: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ['images'],
+        quality: 0.6,
+        base64: true,
+        exif: false,
+        allowsEditing: true,
+      };
+      const res = await (from === 'camera' ? ImagePicker.launchCameraAsync(options) : ImagePicker.launchImageLibraryAsync(options));
+      if (res.canceled || !res.assets?.[0]?.base64) return;
+      setPhoto({ uri: res.assets[0].uri, base64: res.assets[0].base64 });
+    } catch {
+      Alert.alert('No se pudo añadir la foto', 'Inténtalo de nuevo en un momento.');
+    } finally {
+      setPickingPhoto(false);
+    }
+  };
+
+  const choosePhotoSource = () => {
+    Alert.alert('Añadir foto', undefined, [
+      { text: 'Hacer foto', onPress: () => pickPhoto('camera') },
+      { text: 'Elegir de la galería', onPress: () => pickPhoto('library') },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
 
   return (
     <KeyboardAvoidingView
@@ -171,6 +223,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
                   key={c.id}
                   onPress={() => {
                     setCat(c.id);
+                    setPhoto(null);
                     Haptics.selectionAsync().catch(() => {});
                     setStep(2);
                   }}
@@ -304,6 +357,43 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
             </View>
             <Text style={[styles.count, text.length >= 260 && { color: colors.warn }]}>{text.length}/{MAX}</Text>
           </View>
+
+          {categoryById(cat).allowsPhoto && (
+            <View style={styles.photoSection}>
+              <Text style={styles.photoLabel}>Foto (opcional)</Text>
+              {photo ? (
+                <View style={styles.photoPreviewWrap}>
+                  <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+                  <Pressable
+                    onPress={() => setPhoto(null)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Quitar foto"
+                    style={styles.photoRemove}
+                  >
+                    <AppIcon name="x" color="#fff" size={16} />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={choosePhotoSource}
+                  disabled={pickingPhoto}
+                  accessibilityRole="button"
+                  accessibilityLabel="Añadir foto"
+                  style={({ pressed }) => [styles.photoAdd, pressed && { opacity: 0.8 }]}
+                >
+                  {pickingPhoto ? (
+                    <ActivityIndicator size="small" color={colors.muted} />
+                  ) : (
+                    <>
+                      <AppIcon name="camera" color={colors.muted} size={20} />
+                      <Text style={styles.photoAddText}>Añadir foto</Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
+              <Text style={styles.photoHint}>No subas fotos en las que se vea con claridad a una persona.</Text>
+            </View>
+          )}
 
           <Pressable style={styles.ackRow} onPress={() => setAck(!ack)}>
             <View style={[styles.check, ack && styles.checkOn]}>
@@ -497,6 +587,37 @@ const styles = StyleSheet.create({
   okCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, marginBottom: 8 },
   okTitle: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 6 },
   okText: { color: colors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  photoSection: { marginTop: 8 },
+  photoLabel: { color: colors.text, fontSize: 14, fontWeight: '700', marginBottom: 8 },
+  photoAdd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderStyle: 'dashed',
+    backgroundColor: colors.surface,
+  },
+  photoAddText: { color: colors.muted, fontWeight: '700', fontSize: 13 },
+  photoPreviewWrap: { alignSelf: 'flex-start' },
+  photoPreview: { width: 96, height: 96, borderRadius: radius.md, backgroundColor: colors.surface2 },
+  photoRemove: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.bg,
+  },
+  photoHint: { color: colors.muted, fontSize: 11, marginTop: 6 },
   legal: { backgroundColor: colors.surface, borderRadius: radius.md, padding: 14, marginVertical: 6, borderWidth: 1, borderColor: colors.line },
   legalText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
 });

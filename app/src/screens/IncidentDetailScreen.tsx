@@ -1,15 +1,16 @@
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '../components/AppIcon';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { useIdentity } from '../components/IdentityGate';
 import { categoryById } from '../data/categories';
+import { IncidentMessage } from '../data/types';
 import { areaName } from '../data/neighborhood';
 import { readableAddress } from '../lib/address';
-import { apiAppealIncident } from '../lib/api';
-import { HOURS_VISIBLE, timeAgo } from '../lib/privacy';
+import { ApiError, apiAppealIncident, apiGetMessages, apiPostMessage, incidentPhotoUrl } from '../lib/api';
+import { HOURS_VISIBLE, checkText, timeAgo } from '../lib/privacy';
 import { useIncidents } from '../store';
 import { colors, radius, severityColor, severityLabel } from '../theme';
 
@@ -134,6 +135,13 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
         <View style={styles.card}>
           <Text style={styles.sectionLabel}>Qué ha ocurrido</Text>
           <Text style={styles.desc}>{incident.description}</Text>
+          {incident.hasPhoto && (
+            <Image
+              source={{ uri: incidentPhotoUrl(incident.id) }}
+              style={styles.photo}
+              accessibilityLabel="Foto adjunta al aviso"
+            />
+          )}
           <Text style={styles.expiry}>{expiresIn(incident.createdAt)}</Text>
         </View>
 
@@ -168,6 +176,8 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
           </Pressable>
         )}
 
+        {incident.status === 'active' && <Chat incidentId={incident.id} requireIdentity={requireIdentity} />}
+
         {!incident.mine && (
           <Pressable onPress={onFlag} accessibilityRole="button" hitSlop={8} style={styles.flag}>
             <AppIcon name="flag" color={colors.muted} size={15} />
@@ -175,6 +185,99 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
           </Pressable>
         )}
       </ScrollView>
+    </View>
+  );
+};
+
+const CHAT_POLL_MS = 20_000;
+const CHAT_MAX = 280;
+
+/**
+ * Chat anónimo del aviso: ni el autor ni quien escribe se identifican entre
+ * sí, solo «Tú» / «Un vecino» (el servidor nunca manda quién es quién).
+ */
+const Chat = ({ incidentId, requireIdentity }: { incidentId: string; requireIdentity: () => Promise<boolean> }) => {
+  const [messages, setMessages] = React.useState<IncidentMessage[]>([]);
+  const [loaded, setLoaded] = React.useState(false);
+  const [draft, setDraft] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+
+  const load = React.useCallback(() => {
+    apiGetMessages(incidentId)
+      .then((data) => {
+        setMessages(data);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, [incidentId]);
+
+  React.useEffect(() => {
+    load();
+    const timer = setInterval(load, CHAT_POLL_MS);
+    return () => clearInterval(timer);
+  }, [load]);
+
+  const problem = draft.trim().length > 0 ? checkText(draft) : null;
+  const canSend = draft.trim().length > 0 && !problem && !sending;
+
+  const send = async () => {
+    if (!canSend) return;
+    if (!(await requireIdentity())) return;
+    const body = draft.trim();
+    setSending(true);
+    try {
+      const created = await apiPostMessage(incidentId, body);
+      setMessages((prev) => [...prev, created]);
+      setDraft('');
+      tap();
+    } catch (e) {
+      Alert.alert('No se pudo enviar', e instanceof ApiError ? e.message : 'Inténtalo de nuevo en un momento.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.sectionLabel}>Chat del aviso</Text>
+      <Text style={styles.chatHint}>Anónimo: nadie ve quién escribe, ni siquiera entre vosotros.</Text>
+
+      {!loaded ? (
+        <ActivityIndicator color={colors.muted} style={{ marginVertical: 10 }} />
+      ) : messages.length === 0 ? (
+        <Text style={styles.chatEmpty}>Todavía no hay mensajes.</Text>
+      ) : (
+        <View style={styles.chatList}>
+          {messages.map((m) => (
+            <View key={m.id} style={[styles.bubble, m.mine ? styles.bubbleMine : styles.bubbleOther]}>
+              <Text style={styles.bubbleAuthor}>{m.mine ? 'Tú' : 'Un vecino'}</Text>
+              <Text style={styles.bubbleText}>{m.body}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <View style={styles.chatInputRow}>
+        <TextInput
+          value={draft}
+          onChangeText={(t) => setDraft(t.slice(0, CHAT_MAX))}
+          placeholder="Escribe un mensaje…"
+          placeholderTextColor={colors.muted}
+          style={[styles.chatInput, problem ? { borderColor: colors.danger } : null]}
+          multiline
+          editable={!sending}
+        />
+        <Pressable
+          onPress={send}
+          disabled={!canSend}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar mensaje"
+          style={[styles.chatSend, !canSend && styles.chatSendOff]}
+        >
+          {sending ? <ActivityIndicator size="small" color="#fff" /> : <AppIcon name="send" color="#fff" size={16} />}
+        </Pressable>
+      </View>
+      {problem && <Text style={styles.chatProblem}>{problem}</Text>}
     </View>
   );
 };
@@ -198,7 +301,33 @@ const styles = StyleSheet.create({
   placeSub: { color: colors.muted, fontSize: 12, marginTop: 2, lineHeight: 17 },
   sectionLabel: { color: colors.muted, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
   desc: { color: colors.text, fontSize: 16, lineHeight: 24 },
+  photo: { width: '100%', height: 200, borderRadius: radius.md, backgroundColor: colors.surface2, marginTop: 4 },
   expiry: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  chatHint: { color: colors.muted, fontSize: 12, marginTop: -4 },
+  chatEmpty: { color: colors.muted, fontSize: 13, textAlign: 'center', paddingVertical: 10 },
+  chatList: { gap: 8 },
+  bubble: { maxWidth: '85%', borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 8 },
+  bubbleMine: { alignSelf: 'flex-end', backgroundColor: colors.primarySoft },
+  bubbleOther: { alignSelf: 'flex-start', backgroundColor: colors.surface2 },
+  bubbleAuthor: { color: colors.muted, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', marginBottom: 2 },
+  bubbleText: { color: colors.text, fontSize: 14, lineHeight: 19 },
+  chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 4 },
+  chatInput: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 110,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface2,
+    color: colors.text,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  chatSend: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  chatSendOff: { backgroundColor: colors.line },
+  chatProblem: { color: colors.danger, fontSize: 12, marginTop: 4 },
   primary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: radius.pill, backgroundColor: colors.primary },
   primaryDone: { backgroundColor: 'rgba(16,185,129,0.12)' },
   primaryText: { color: '#fff', fontSize: 16, fontWeight: '800' },

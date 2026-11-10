@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CategoryId, Incident, Zone } from '../data/types';
+import { CategoryId, Incident, IncidentMessage, Zone } from '../data/types';
 
 const DEVICE_TOKEN_KEY = 'av.device_token.v1';
 /** '1' si el token guardado pertenece a una identidad verificada (Google). */
@@ -132,10 +132,30 @@ export async function apiCreateIncident(p: {
   category: CategoryId;
   zone: Zone;
   description: string;
+  /** Base64 (con o sin el prefijo data:image/...); solo si la categoría la admite. */
+  photo?: string;
 }): Promise<Incident> {
   const res = await apiFetch<{ data: Incident }>('/api/incidents', {
     method: 'POST',
     body: JSON.stringify(p),
+  });
+  return res.data;
+}
+
+/** URL pública de la foto de un aviso (nada que firmar: es tan pública como el resto del aviso). */
+export function incidentPhotoUrl(id: string): string {
+  return `${getApiBaseUrl()}/api/incidents/${id}/photo`;
+}
+
+export async function apiGetMessages(incidentId: string): Promise<IncidentMessage[]> {
+  const res = await apiFetch<{ data: IncidentMessage[] }>(`/api/incidents/${incidentId}/messages`);
+  return res.data;
+}
+
+export async function apiPostMessage(incidentId: string, body: string): Promise<IncidentMessage> {
+  const res = await apiFetch<{ data: IncidentMessage }>(`/api/incidents/${incidentId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ body }),
   });
   return res.data;
 }
@@ -263,6 +283,7 @@ export interface NotifySettings {
   confirmations: boolean;
   nearby: boolean;
   watched: boolean;
+  messages: boolean;
   pushRegistered: boolean;
   /** Centro de la celda (~450 m) donde el servidor cree que estás; null si no la compartes. */
   area: { lat: number; lng: number } | null;
@@ -287,6 +308,7 @@ export async function apiUpdateNotifySettings(p: {
   confirmations?: boolean;
   nearby?: boolean;
   watched?: boolean;
+  messages?: boolean;
   area?: { lat: number; lng: number } | null;
 }): Promise<NotifySettings> {
   return (await apiFetch<{ data: NotifySettings }>('/api/notifications/settings', { method: 'PUT', body: JSON.stringify(p) })).data;
