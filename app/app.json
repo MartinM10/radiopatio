@@ -39,6 +39,7 @@
       }
     },
     "plugins": [
+      "./plugins/withOptionalCamera",
       [
         "expo-splash-screen",
         {
