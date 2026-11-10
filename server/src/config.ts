@@ -59,6 +59,8 @@ export const config = {
   // Tope por dispositivo y hora: un barrio movido no debe convertir el móvil en una sirena.
   notifyMaxPerHour: parseInt(process.env.NOTIFY_MAX_PER_HOUR || '6', 10),
   maxWatchedZones: parseInt(process.env.MAX_WATCHED_ZONES || '5', 10),
+  // Chat anónimo por aviso: mensajes por dispositivo y hora.
+  messageRateMax: parseInt(process.env.MESSAGE_RATE_MAX || '30', 10),
 
   // ── Geocodificación inversa (calle sugerida al fijar el pin) ──────────────
   // El servidor consulta un servicio externo con las coordenadas, sin ninguna

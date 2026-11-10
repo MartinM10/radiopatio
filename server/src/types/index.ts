@@ -30,6 +30,8 @@ export interface Category {
   severity: Severity;
   hint: string;
   group?: CategoryGroup;
+  /** Admite foto: solo donde no hay una persona señalada (objeto perdido, servicios, emergencias). */
+  allowsPhoto?: boolean;
 }
 
 export interface Zone {
@@ -51,6 +53,7 @@ export interface Incident {
   flaggedByMe?: boolean;
   mine?: boolean;
   status?: 'active' | 'hidden' | 'pending' | 'deleted';
+  hasPhoto?: boolean;
 }
 
 export interface IncidentRow {

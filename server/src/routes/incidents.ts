@@ -8,6 +8,8 @@ import { authenticateWrite, resolveReadHash } from '../lib/device';
 import { scheduleJudge } from '../lib/judge';
 import { notifyConfirmation, notifyNewIncident } from '../lib/notify';
 import { fillMunicipality } from '../lib/municipality';
+import { InvalidPhotoError, processIncidentPhoto } from '../lib/photo';
+import { categories } from './categories';
 import { snapToHexGrid } from '../lib/geo';
 import {
   haversineKm,
@@ -58,6 +60,9 @@ const createIncidentSchema = z.object({
       .transform((v) => (v ? sanitizeAddress(v) || undefined : undefined)),
   }),
   description: z.string().trim().min(10, 'La descripción debe tener al menos 10 caracteres').max(280, 'La descripción no puede superar 280 caracteres'),
+  // Foto opcional, en base64 (con o sin el prefijo data:image/...;base64,). Solo
+  // se guarda si la categoría la admite (routes/categories.ts: allowsPhoto).
+  photo: z.string().max(11_000_000).optional(),
 });
 
 const listQuerySchema = z.object({
@@ -88,6 +93,7 @@ interface IncidentRowLike {
   address?: string | null;
   hex_lat: number | null;
   hex_lng: number | null;
+  has_photo?: boolean;
 }
 
 /** Coordenada pública: SIEMPRE el centro de la celda hex (~450 m); jamás la exacta. */
@@ -123,6 +129,7 @@ const rowToIncident = (r: IncidentRowLike, deviceHash: string): Incident => {
     createdAt: createdMs,
     confirmations: parseInt(String(r.confirmations_count), 10),
     mine: r.device_hash === deviceHash,
+    hasPhoto: Boolean(r.has_photo),
   };
 };
 
@@ -192,6 +199,7 @@ export async function incidentRoutes(app: FastifyInstance) {
         i.device_hash,
         i.hex_lat,
         i.hex_lng,
+        (i.photo IS NOT NULL) AS has_photo,
         (ic.device_hash IS NOT NULL) AS confirmed_by_me,
         (fl.device_hash IS NOT NULL) AS flagged_by_me
       FROM incidents i
@@ -235,7 +243,7 @@ export async function incidentRoutes(app: FastifyInstance) {
       });
     }
 
-    const { category, zone, description } = parseRes.data;
+    const { category, zone, description, photo } = parseRes.data;
 
     // Validación de privacidad (RGPD / LOPD / DSA)
     // La calle pasa el mismo filtro que la descripción: no es un hueco para
@@ -246,6 +254,25 @@ export async function incidentRoutes(app: FastifyInstance) {
         error: 'PRIVACY_VIOLATION',
         message: privacyProblem,
       });
+    }
+
+    // La foto solo se admite donde no hay una persona señalada (objeto/mascota
+    // perdida, servicios, emergencias): nunca en robos, agresiones, etc.
+    let processedPhoto: { buffer: Buffer; mime: string } | null = null;
+    if (photo) {
+      const cat = categories.find((c) => c.id === category);
+      if (!cat?.allowsPhoto) {
+        return reply.status(400).send({
+          error: 'PHOTO_NOT_ALLOWED',
+          message: 'Esta categoría no admite fotos.',
+        });
+      }
+      try {
+        processedPhoto = await processIncidentPhoto(photo);
+      } catch (err) {
+        const message = err instanceof InvalidPhotoError ? err.message : 'No se pudo procesar la imagen.';
+        return reply.status(400).send({ error: 'INVALID_PHOTO', message });
+      }
     }
 
     // Rate limiting por dispositivo (máx MAX_PER_HOUR avisos por hora)
@@ -368,9 +395,13 @@ export async function incidentRoutes(app: FastifyInstance) {
 
     await pool.query(
       `INSERT INTO incidents
-        (id, category, grid_x, grid_y, description, created_at, confirmations_count, flags_count, status, device_hash, lat, lng, address, hex_key, hex_lat, hex_lng)
-       VALUES ($1, $2, $3, $4, $5, $6, 0, 0, $7, $8, $9, $10, $11, $12, $13, $14)`,
-      [id, category, zone.gx, zone.gy, description, now, initialStatus, deviceHash, lat, lng, zone.address ?? null, hex.key, hex.centerLat, hex.centerLng]
+        (id, category, grid_x, grid_y, description, created_at, confirmations_count, flags_count, status, device_hash, lat, lng, address, hex_key, hex_lat, hex_lng, photo, photo_mime)
+       VALUES ($1, $2, $3, $4, $5, $6, 0, 0, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+      [
+        id, category, zone.gx, zone.gy, description, now, initialStatus, deviceHash, lat, lng,
+        zone.address ?? null, hex.key, hex.centerLat, hex.centerLng,
+        processedPhoto?.buffer ?? null, processedPhoto?.mime ?? null,
+      ]
     );
 
     // El juez secundario (si está activo) puntúa de forma asíncrona,
@@ -413,6 +444,7 @@ export async function incidentRoutes(app: FastifyInstance) {
       flaggedByMe: false,
       mine: true,
       status: initialStatus,
+      hasPhoto: processedPhoto !== null,
     };
 
     return reply.status(201).send({ data: created });

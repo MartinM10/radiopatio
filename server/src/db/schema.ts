@@ -120,6 +120,29 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_device ON notifications(device_id, created_at DESC);
 
+-- Foto opcional de un aviso (solo en categorías sin "culpable" que retratar:
+-- objeto/mascota perdida, servicios y emergencias). Se guarda ya recomprimida
+-- y sin metadatos EXIF (el servidor la reprocesa con sharp antes de guardar,
+-- lo que también limpia la ubicación GPS que pudiera llevar el original). No
+-- hay almacenamiento externo: cabe en la fila y desaparece con el aviso.
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS photo BYTEA;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS photo_mime VARCHAR(20);
+
+-- Chat anónimo por aviso: ni el autor ni quien escribe se identifican entre
+-- sí, solo "Tú" / "Un vecino" (TRUST.md, mismo principio que las
+-- confirmaciones). Cae en cascada con el aviso, a las 72 horas o antes.
+CREATE TABLE IF NOT EXISTS incident_messages (
+    id SERIAL PRIMARY KEY,
+    incident_id VARCHAR(36) NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
+    device_hash VARCHAR(64) NOT NULL,
+    body VARCHAR(280) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_incident_messages_incident ON incident_messages(incident_id, created_at);
+
+-- Avisarme cuando escriban en un aviso mío o en una conversación en la que participo.
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS notify_messages BOOLEAN NOT NULL DEFAULT TRUE;
+
 -- Municipio del aviso (de la geocodificación inversa del servidor). Solo se
 -- usa para el recuento diario y desaparece con el aviso.
 ALTER TABLE incidents ADD COLUMN IF NOT EXISTS municipality VARCHAR(80);

@@ -12,20 +12,20 @@ export const categories: Category[] = [
   { id: 'altercado', label: 'Altercado / ruido', emoji: '📢', severity: 1, hint: 'Peleas, botellón, ruidos molestos', group: 'seguridad' },
 
   // Servicios y Vía Pública
-  { id: 'corte_agua', label: 'Corte de agua / fuga', emoji: '💧', severity: 1, hint: 'Sin agua, bajada de presión o tubería rota', group: 'servicios' },
-  { id: 'corte_luz', label: 'Corte de luz', emoji: '⚡', severity: 1, hint: 'Avería eléctrica en la manzana, bloque o alumbrado', group: 'servicios' },
-  { id: 'alumbrado', label: 'Farola / alumbrado', emoji: '💡', severity: 1, hint: 'Farolas apagadas o rotas, tramo a oscuras', group: 'servicios' },
-  { id: 'calzada', label: 'Asfalto / calzada', emoji: '🚧', severity: 1, hint: 'Baches, socavones, obras o alcantarillas', group: 'servicios' },
-  { id: 'limpieza', label: 'Limpieza / residuos', emoji: '🗑️', severity: 1, hint: 'Contenedores desbordados o suciedad grave', group: 'servicios' },
-  { id: 'perdido', label: 'Objeto / mascota', emoji: '🐾', severity: 1, hint: 'Mascota perdida o pertenencia extraviada', group: 'servicios' },
+  { id: 'corte_agua', label: 'Corte de agua / fuga', emoji: '💧', severity: 1, hint: 'Sin agua, bajada de presión o tubería rota', group: 'servicios', allowsPhoto: true },
+  { id: 'corte_luz', label: 'Corte de luz', emoji: '⚡', severity: 1, hint: 'Avería eléctrica en la manzana, bloque o alumbrado', group: 'servicios', allowsPhoto: true },
+  { id: 'alumbrado', label: 'Farola / alumbrado', emoji: '💡', severity: 1, hint: 'Farolas apagadas o rotas, tramo a oscuras', group: 'servicios', allowsPhoto: true },
+  { id: 'calzada', label: 'Asfalto / calzada', emoji: '🚧', severity: 1, hint: 'Baches, socavones, obras o alcantarillas', group: 'servicios', allowsPhoto: true },
+  { id: 'limpieza', label: 'Limpieza / residuos', emoji: '🗑️', severity: 1, hint: 'Contenedores desbordados o suciedad grave', group: 'servicios', allowsPhoto: true },
+  { id: 'perdido', label: 'Objeto / mascota', emoji: '🐾', severity: 1, hint: 'Mascota perdida o pertenencia extraviada', group: 'servicios', allowsPhoto: true },
 
   // Emergencias y clima: daños que un vecino puede ver con sus ojos. No cuentan
   // para el nivel de seguridad de la zona y se guardan en el recuento diario.
-  { id: 'inundacion', label: 'Inundación', emoji: '🌊', severity: 3, hint: 'Calle, garaje o bajo inundado; balsa de agua peligrosa', group: 'emergencias' },
-  { id: 'incendio', label: 'Incendio / humo', emoji: '🔥', severity: 3, hint: 'Fuego o humo cerca de ti; si solo lo ves a lo lejos, no hace falta avisar', group: 'emergencias' },
-  { id: 'derrumbe', label: 'Derrumbe', emoji: '🧱', severity: 3, hint: 'Muro, cornisa, fachada o ladera que se ha caído o amenaza caer', group: 'emergencias' },
-  { id: 'arbol', label: 'Árbol caído', emoji: '🌳', severity: 2, hint: 'Árbol o rama grande caída en la calle o sobre algo', group: 'emergencias' },
-  { id: 'calle_cortada', label: 'Calle cortada', emoji: '🚫', severity: 1, hint: 'Paso cortado por accidente, obra, temporal o evento', group: 'emergencias' },
+  { id: 'inundacion', label: 'Inundación', emoji: '🌊', severity: 3, hint: 'Calle, garaje o bajo inundado; balsa de agua peligrosa', group: 'emergencias', allowsPhoto: true },
+  { id: 'incendio', label: 'Incendio / humo', emoji: '🔥', severity: 3, hint: 'Fuego o humo cerca de ti; si solo lo ves a lo lejos, no hace falta avisar', group: 'emergencias', allowsPhoto: true },
+  { id: 'derrumbe', label: 'Derrumbe', emoji: '🧱', severity: 3, hint: 'Muro, cornisa, fachada o ladera que se ha caído o amenaza caer', group: 'emergencias', allowsPhoto: true },
+  { id: 'arbol', label: 'Árbol caído', emoji: '🌳', severity: 2, hint: 'Árbol o rama grande caída en la calle o sobre algo', group: 'emergencias', allowsPhoto: true },
+  { id: 'calle_cortada', label: 'Calle cortada', emoji: '🚫', severity: 1, hint: 'Paso cortado por accidente, obra, temporal o evento', group: 'emergencias', allowsPhoto: true },
 
   // General
   { id: 'otro', label: 'Otro aviso', emoji: '📍', severity: 1, hint: 'Cualquier otra incidencia de interés vecinal', group: 'general' },

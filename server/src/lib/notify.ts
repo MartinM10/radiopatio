@@ -6,22 +6,24 @@ import { haversineKm } from './quality';
 /**
  * Notificaciones de Radio Patio.
  *
- * Tres motivos para avisar a un vecino:
+ * Cuatro motivos para avisar a un vecino:
  *  - `confirmation`: alguien ha confirmado un aviso SUYO.
  *  - `nearby`: han publicado un aviso en la celda donde está (su «área»).
  *  - `watched`: han publicado un aviso en una zona que vigila aunque no esté allí.
+ *  - `message`: alguien ha escrito en el chat de un aviso en el que participa
+ *    (el autor, o quien ya escribió antes en esa conversación).
  *
  * Cada notificación se guarda SIEMPRE en la bandeja (tabla `notifications`, que
  * la app consulta) y, además, se envía por push si el dispositivo registró un
  * token de Expo. Así la bandeja funciona sin push (web, permiso denegado, sin
  * Firebase configurado) y el push es solo el empujón.
  *
- * Privacidad: nunca se notifica quién confirmó. De la posición del vecino solo
- * se guarda el centro de su celda (~450 m), y el autor de un aviso jamás recibe
- * avisos de «cerca de ti» sobre su propio aviso.
+ * Privacidad: nunca se notifica quién confirmó ni quién escribió. De la
+ * posición del vecino solo se guarda el centro de su celda (~450 m), y el
+ * autor de un aviso jamás recibe avisos de «cerca de ti» sobre su propio aviso.
  */
 
-export type NotificationKind = 'confirmation' | 'nearby' | 'watched';
+export type NotificationKind = 'confirmation' | 'nearby' | 'watched' | 'message';
 
 export interface PushMessage {
   to: string;
@@ -235,5 +237,63 @@ export async function notifyNewIncident(inc: NewIncidentInfo): Promise<void> {
     await deliver([...byDevice.values()]);
   } catch (err) {
     console.error('[notificaciones] aviso nuevo fallido:', err);
+  }
+}
+
+/**
+ * Alguien ha escrito en el chat de un aviso: avisa al resto de participantes
+ * (el autor y quien ya hubiera escrito antes), nunca al propio remitente.
+ * Como con las confirmaciones, si ya tenía un mensaje sin leer de ese aviso,
+ * se actualiza en vez de apilar otra notificación.
+ */
+export async function notifyMessage(
+  incidentId: string,
+  category: string,
+  authorHash: string,
+  senderHash: string,
+  preview: string,
+): Promise<void> {
+  try {
+    const recipients = await pool.query(
+      `SELECT DISTINCT d.id, d.push_token
+       FROM devices d
+       WHERE d.notify_messages AND d.device_hash <> $2
+         AND (d.device_hash = $1 OR d.device_hash IN (
+               SELECT device_hash FROM incident_messages WHERE incident_id = $3
+             ))`,
+      [authorHash, senderHash, incidentId],
+    );
+    if (recipients.rowCount === 0) return;
+
+    const cat = categoryOf(category);
+    const name = cat ? `${cat.emoji} ${cat.label}` : 'un aviso';
+    const title = 'Nuevo mensaje';
+    const body = `${name}: ${clip(preview, 90)}`;
+
+    const toInsert: Pending[] = [];
+    for (const r of recipients.rows as { id: string; push_token: string | null }[]) {
+      const unread = await pool.query(
+        `SELECT id FROM notifications
+         WHERE device_id = $1 AND kind = 'message' AND incident_id = $2 AND read_at IS NULL
+         ORDER BY created_at DESC LIMIT 1`,
+        [r.id, incidentId],
+      );
+      if ((unread.rowCount ?? 0) > 0) {
+        await pool.query(`UPDATE notifications SET title = $2, body = $3, created_at = NOW() WHERE id = $1`, [
+          unread.rows[0].id,
+          title,
+          body,
+        ]);
+        if (config.pushEnabled && r.push_token) {
+          const { invalidTokens } = await sender([{ to: r.push_token, title, body, data: { kind: 'message', incidentId } }]);
+          if (invalidTokens.length > 0) await pool.query(`UPDATE devices SET push_token = NULL WHERE id = $1`, [r.id]);
+        }
+      } else {
+        toInsert.push({ deviceId: r.id, pushToken: r.push_token, kind: 'message', incidentId, title, body });
+      }
+    }
+    await deliver(toInsert);
+  } catch (err) {
+    console.error('[notificaciones] mensaje fallido:', err);
   }
 }
