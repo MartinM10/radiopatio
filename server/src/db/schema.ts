@@ -158,4 +158,17 @@ CREATE TABLE IF NOT EXISTS incident_daily_counts (
     verified INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (day, municipality, category)
 );
+
+-- Episodios: un temporal, una DANA, un terremoto... Un nombre, unos municipios y
+-- unas fechas que agrupan los recuentos para hacer un balance de daños. Los
+-- crea un moderador; no se detectan solos.
+CREATE TABLE IF NOT EXISTS episodes (
+    id SERIAL PRIMARY KEY,
+    slug VARCHAR(80) NOT NULL UNIQUE,
+    name VARCHAR(120) NOT NULL,
+    municipalities TEXT[] NOT NULL,
+    starts_on DATE NOT NULL,
+    ends_on DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 `;

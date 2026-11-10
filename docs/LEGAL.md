@@ -97,3 +97,21 @@ primera ejecución.
 4. Moderación efectiva en backend, límites de uso (anti-spam) y conservación mínima.
 5. Revisión de las políticas de App Store y Google Play sobre contenido generado por usuarios.
 6. Posible convenio con ayuntamiento/policía local si se quiere enviar avisos a las autoridades.
+
+## Declaración de seguridad de los datos (Google Play)
+
+Lo que la app recoge hoy, sacado del código, para rellenar el formulario de Play Console. Revísalo cada vez que se añada una función que toque datos.
+
+| Tipo en Play | Qué es | Motivo | Opcional |
+|---|---|---|---|
+| Ubicación precisa | Las coordenadas del GPS se envían al publicar y para «cerca de ti». El servidor las usa para calcular la celda y las borra a las 72 h | Funcionalidad de la aplicación; prevención de fraude (anti-teletransporte) | Sí: sin permiso se usa el mapa a mano |
+| Ubicación aproximada | Centro de la celda de ~450 m del vecino y de cada zona que vigila | Funcionalidad de la aplicación | Sí |
+| Identificadores de dispositivo u otros | Token de dispositivo (se guarda su resumen), token de push, código irreversible de la cuenta de Google | Funcionalidad de la aplicación; prevención de fraude; gestión de cuentas | El token de push, sí |
+| Fotos | Foto opcional de un aviso (se recomprime y pierde sus metadatos) | Funcionalidad de la aplicación | Sí |
+| Mensajes (otros mensajes en la aplicación) | Mensajes del chat de un aviso, de hasta 280 caracteres | Funcionalidad de la aplicación | Sí |
+| Otro contenido generado por el usuario | Descripción y calle de los avisos | Funcionalidad de la aplicación | No |
+
+- **Se comparten con terceros:** no, salvo con proveedores de servicios que tratan datos por nosotros: Expo y Firebase (entrega de notificaciones, con su contenido), Google (inicio de sesión), OpenStreetMap (mapa y calle sugerida) y Cloudflare (proxy de la web y la API). Play exime a los proveedores de servicios de «compartir».
+- **Cifrado en tránsito:** sí, todo va por HTTPS.
+- **Borrado:** el usuario puede borrar sus datos desde la app (Ayuda → Borrar mi identidad y mis datos). URL pública: `https://radiopatio.app/eliminar-cuenta.html`.
+- **No se recogen:** nombre, email, teléfono, foto de perfil, contactos, historial de navegación, datos financieros ni identificadores publicitarios.

@@ -121,6 +121,70 @@ test('chat anónimo: nadie ve quién escribe, solo si el mensaje es propio', asy
   }
 });
 
+test('chat anónimo: autor y vecinos se distinguen por rol y número, sin identificadores', async () => {
+  const app = buildApp();
+  try {
+    const inc = await publish(app, 'chat-num-author');
+    await postMessage(app, inc.id, 'chat-num-author', text('Es mi mochila azul'));
+    const a1 = await postMessage(app, inc.id, 'chat-num-a', text('Creo que la he visto'));
+    await postMessage(app, inc.id, 'chat-num-b', text('Yo también la vi'));
+    await postMessage(app, inc.id, 'chat-num-a', text('Estaba junto al banco'));
+
+    // Lo que devuelve al publicar ya lleva su rol y número.
+    assert.deepStrictEqual(
+      { fromAuthor: JSON.parse(a1.body).data.fromAuthor, participant: JSON.parse(a1.body).data.participant },
+      { fromAuthor: false, participant: 1 },
+    );
+
+    // Lo ve igual cualquiera: el autor, un vecino o un lector sin sesión.
+    for (const label of ['chat-num-author', 'chat-num-b', undefined]) {
+      const list = JSON.parse((await getMessages(app, inc.id, label)).body).data as {
+        fromAuthor: boolean;
+        participant: number | null;
+        mine: boolean;
+      }[];
+      assert.deepStrictEqual(
+        list.map((m) => [m.fromAuthor, m.participant]),
+        [
+          [true, null],
+          [false, 1],
+          [false, 2],
+          [false, 1],
+        ],
+        `visto por ${label ?? 'un lector anónimo'}`,
+      );
+      assert.ok(!/device_hash|deviceHash/.test(JSON.stringify(list)));
+    }
+    const forB = JSON.parse((await getMessages(app, inc.id, 'chat-num-b')).body).data as { mine: boolean }[];
+    assert.deepStrictEqual(forB.map((m) => m.mine), [false, false, true, false]);
+  } finally {
+    await app.close();
+  }
+});
+
+test('borrar mi identidad borra también mis mensajes en avisos de otros', async () => {
+  const app = buildApp();
+  try {
+    const inc = await publish(app, 'del-author');
+    await postMessage(app, inc.id, 'del-author', text('Mensaje del autor'));
+    await postMessage(app, inc.id, 'del-leaver', text('Mensaje que se va'));
+    await postMessage(app, inc.id, 'del-leaver', text('Otro mensaje que se va'));
+    const count = async () => (await pool.query('SELECT count(*)::int AS n FROM incident_messages WHERE incident_id = $1', [inc.id])).rows[0].n as number;
+    assert.strictEqual(await count(), 3);
+
+    const del = await app.inject({ method: 'DELETE', url: '/api/devices/me', headers: await devHeaders('del-leaver') });
+    assert.strictEqual(del.statusCode, 200, del.body);
+    assert.strictEqual(await count(), 1, 'solo queda el del autor');
+
+    // Y si borra el autor, caen el aviso y toda su conversación.
+    const delAuthor = await app.inject({ method: 'DELETE', url: '/api/devices/me', headers: await devHeaders('del-author') });
+    assert.strictEqual(delAuthor.statusCode, 200);
+    assert.strictEqual(await count(), 0);
+  } finally {
+    await app.close();
+  }
+});
+
 test('chat anónimo: solo en avisos activos', async () => {
   const app = buildApp();
   try {

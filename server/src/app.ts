@@ -11,6 +11,7 @@ import { incidentRoutes } from './routes/incidents';
 import { messageRoutes } from './routes/messages';
 import { moderationRoutes } from './routes/moderation';
 import { notificationRoutes } from './routes/notifications';
+import { statsRoutes } from './routes/stats';
 import { zoneRoutes } from './routes/zones';
 
 export function buildApp(): FastifyInstance {
@@ -74,6 +75,7 @@ export function buildApp(): FastifyInstance {
   app.register(messageRoutes);
   app.register(moderationRoutes);
   app.register(notificationRoutes);
+  app.register(statsRoutes);
   app.register(zoneRoutes);
 
   return app;

@@ -54,6 +54,7 @@ export const config = {
   // PUSH_ENABLED=0 lo apaga: la bandeja dentro de la app sigue funcionando.
   pushEnabled: process.env.PUSH_ENABLED !== '0',
   expoPushUrl: process.env.EXPO_PUSH_URL || 'https://exp.host/--/api/v2/push/send',
+  expoReceiptsUrl: process.env.EXPO_RECEIPTS_URL || 'https://exp.host/--/api/v2/push/getReceipts',
   // Radio de «ha pasado algo cerca de ti» y de las zonas vigiladas (m).
   notifyRadiusM: parseInt(process.env.NOTIFY_RADIUS_M || '2000', 10),
   // Tope por dispositivo y hora: un barrio movido no debe convertir el móvil en una sirena.
