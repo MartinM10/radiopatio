@@ -66,4 +66,12 @@ export interface IncidentMessage {
   body: string;
   createdAt: number;
   mine: boolean;
+  /** Lo escribió quien publicó el aviso. */
+  fromAuthor: boolean;
+  /** «Vecino N» por orden de primera intervención en este aviso; null si es el autor. */
+  participant: number | null;
 }
+
+/** Cómo se rotula quién escribe: nadie se identifica, solo su papel en este aviso. */
+export const messageAuthorLabel = (m: Pick<IncidentMessage, 'mine' | 'fromAuthor' | 'participant'>): string =>
+  m.mine ? 'Tú' : m.fromAuthor ? 'Autor del aviso' : `Vecino ${m.participant ?? ''}`.trim();

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { categories, categoryById, countsForSafety, isLifeThreatening } from '../src/data/categories';
-import { Incident } from '../src/data/types';
+import { Incident, messageAuthorLabel } from '../src/data/types';
 import { buildHexGridForIncidents } from '../src/lib/hexgrid';
 
 const at = (category: Incident['category'], confirmations = 3): Incident => ({
@@ -48,5 +48,16 @@ describe('foto en los avisos', () => {
     for (const id of withPhoto) expect(categoryById(id as Incident['category']).allowsPhoto).toBe(true);
     for (const id of withoutPhoto) expect(categoryById(id as Incident['category']).allowsPhoto).toBeFalsy();
     expect(withPhoto.length + withoutPhoto.length).toBe(categories.length);
+  });
+});
+
+describe('chat: quién escribe', () => {
+  const label = (m: { mine: boolean; fromAuthor: boolean; participant: number | null }) => messageAuthorLabel(m);
+  test('cada mensaje se rotula por su papel, nunca por una identidad', () => {
+    expect(label({ mine: true, fromAuthor: false, participant: 2 })).toBe('Tú');
+    expect(label({ mine: true, fromAuthor: true, participant: null })).toBe('Tú');
+    expect(label({ mine: false, fromAuthor: true, participant: null })).toBe('Autor del aviso');
+    expect(label({ mine: false, fromAuthor: false, participant: 1 })).toBe('Vecino 1');
+    expect(label({ mine: false, fromAuthor: false, participant: 3 })).toBe('Vecino 3');
   });
 });
