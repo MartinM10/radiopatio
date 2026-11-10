@@ -322,7 +322,7 @@
         '<div class="figures">' +
           '<div class="fig main"><b>' + num(e.totals.confirmed) + '</b><span>avisos confirmados por otros vecinos</span></div>' +
           '<div class="fig"><b>' + num(e.totals.total) + '</b><span>avisos publicados en total</span></div>' +
-          '<div class="fig"><b>' + num(e.totals.verified) + '</b><span>verificados por dos o más vecinos</span></div>' +
+          '<div class="fig"><b>' + num(e.totals.verified) + '</b><span>verificados por ' + num(e.verifiedAt || 3) + ' o más vecinos</span></div>' +
         '</div>' +
         (e.byCategory.length === 0 ? '<p class="gone">Todavía no hay avisos registrados en este episodio.</p>' :
           '<h2>Qué se ha avisado</h2><div class="bars">' + cats + '</div>' +

@@ -1,3 +1,4 @@
+import { config } from '../config';
 import { pool } from '../db';
 
 /**
@@ -30,18 +31,18 @@ export interface StatsQuery {
   category?: string;
 }
 
-const MERGED = `
+const merged = () => `
   WITH merged AS (
     SELECT day, municipality, category, total, confirmed, verified FROM incident_daily_counts
     UNION ALL
     SELECT (created_at AT TIME ZONE 'Europe/Madrid')::date, COALESCE(municipality, ''), category,
-           1, (confirmations_count >= 1)::int, (confirmations_count >= 2)::int
+           1, (confirmations_count >= 1)::int, (confirmations_count >= ${config.verifiedAt})::int
     FROM incidents WHERE status = 'active'
   )`;
 
 export async function dailyStats(q: StatsQuery): Promise<StatsRow[]> {
   const { rows } = await pool.query(
-    `${MERGED}
+    `${merged()}
      SELECT to_char(day, 'YYYY-MM-DD') AS day, municipality, category,
             SUM(total)::int AS total, SUM(confirmed)::int AS confirmed, SUM(verified)::int AS verified
      FROM merged
@@ -59,7 +60,7 @@ export async function dailyStats(q: StatsQuery): Promise<StatsRow[]> {
 /** Municipios con avisos en el último año, para que un moderador escriba sus nombres tal como están guardados. */
 export async function knownMunicipalities(): Promise<{ municipality: string; total: number }[]> {
   const { rows } = await pool.query(
-    `${MERGED}
+    `${merged()}
      SELECT municipality, SUM(total)::int AS total
      FROM merged
      WHERE municipality <> '' AND day >= (CURRENT_DATE - 365)

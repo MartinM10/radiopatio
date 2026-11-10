@@ -4,6 +4,7 @@ import { config } from '../config';
 import { pool } from '../db';
 import { authenticateWrite, resolveReadHash } from '../lib/device';
 import { notifyMessage } from '../lib/notify';
+import { liveSql } from '../lib/lifetime';
 import { checkText } from '../lib/privacy';
 
 /**
@@ -58,7 +59,7 @@ export async function messageRoutes(app: FastifyInstance) {
   // GET /api/incidents/:id/messages — lectura pública, como el resto del aviso.
   app.get<{ Params: { id: string } }>('/api/incidents/:id/messages', async (req, reply) => {
     const { id } = req.params;
-    const incRes = await pool.query(`SELECT device_hash FROM incidents WHERE id = $1 AND status = 'active'`, [id]);
+    const incRes = await pool.query(`SELECT device_hash FROM incidents WHERE id = $1 AND ${liveSql()}`, [id]);
     if (incRes.rowCount === 0) {
       return reply.status(404).send({ error: 'INCIDENT_NOT_FOUND', message: 'Aviso no encontrado o inactivo' });
     }
@@ -92,7 +93,7 @@ export async function messageRoutes(app: FastifyInstance) {
       }
 
       const { id } = req.params;
-      const incRes = await pool.query(`SELECT device_hash, category FROM incidents WHERE id = $1 AND status = 'active'`, [id]);
+      const incRes = await pool.query(`SELECT device_hash, category FROM incidents WHERE id = $1 AND ${liveSql()}`, [id]);
       if (incRes.rowCount === 0) {
         return reply.status(404).send({ error: 'INCIDENT_NOT_FOUND', message: 'Aviso no encontrado o inactivo' });
       }
@@ -115,7 +116,7 @@ export async function messageRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>('/api/incidents/:id/photo', async (req, reply) => {
     const { id } = req.params;
     const res = await pool.query<{ photo: Buffer | null; photo_mime: string | null }>(
-      `SELECT photo, photo_mime FROM incidents WHERE id = $1 AND status = 'active'`,
+      `SELECT photo, photo_mime FROM incidents WHERE id = $1 AND ${liveSql()}`,
       [id],
     );
     if (res.rowCount === 0 || !res.rows[0].photo) {

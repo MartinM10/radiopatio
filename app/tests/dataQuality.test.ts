@@ -6,6 +6,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import * as dq from '../src/lib/dataQuality';
+import * as lifetime from '../src/lib/lifetime';
 import * as priv from '../src/lib/privacy';
 import { makeSeed } from '../src/data/seed';
 import { snapToHexGrid } from '../src/lib/hexgrid';
@@ -107,16 +108,51 @@ describe('parseStoredIncidents', () => {
 
 // ── Retención y confianza ───────────────────────────────────────────────────
 describe('retención y confianza', () => {
-  test('isExpired/pruneExpired: 72 h exactas', () => {
-    expect(dq.isExpired(NOW - 72 * 3_600_000, NOW)).toBe(true);
-    expect(dq.isExpired(NOW - 72 * 3_600_000 + 1, NOW)).toBe(false);
-    const pruned = dq.pruneExpired([validIncident, { ...validIncident, id: 'x2', createdAt: NOW - 100 * 3_600_000 }], NOW);
+  test('isExpired/pruneExpired: cada aviso con su caducidad', () => {
+    const H = 3_600_000;
+    // Sin expiresAt manda la duración de su categoría.
+    const robo = { createdAt: NOW - 72 * H, category: 'hogar' as const };
+    expect(lifetime.isExpired(robo, NOW)).toBe(true);
+    expect(lifetime.isExpired({ ...robo, createdAt: NOW - 72 * H + 1 }, NOW)).toBe(false);
+    const farola = { createdAt: NOW - 100 * H, category: 'alumbrado' as const }; // dura 7 días
+    expect(lifetime.isExpired(farola, NOW)).toBe(false);
+    expect(lifetime.isExpired({ createdAt: NOW - 13 * H, category: 'altercado' as const }, NOW)).toBe(true); // 12 h
+    // Con expiresAt manda lo que dijo el servidor (ampliado o acortado).
+    expect(lifetime.isExpired({ ...robo, createdAt: NOW - 80 * H, expiresAt: NOW + H }, NOW)).toBe(false);
+    expect(lifetime.isExpired({ ...farola, expiresAt: NOW - 1 }, NOW)).toBe(true);
+    const pruned = dq.pruneExpired([validIncident, { ...validIncident, id: 'x2', createdAt: NOW - 100 * H }], NOW);
     expect(pruned.map((i) => i.id)).toEqual(['u-abc-123']);
   });
 
-  test('trustWeight: confirmado = 1, sin confirmar = 0.5', () => {
-    expect(dq.trustWeight({ confirmations: 2 })).toBe(1);
-    expect(dq.trustWeight({ confirmations: 1 })).toBe(0.5);
+  test('trustWeight: verificado = 1, sin verificar = 0.5, con el umbral que dice el servidor', () => {
+    const before = dq.CONFIRMED_AT;
+    try {
+      dq.setVerifiedAt(3);
+      expect(dq.trustWeight({ confirmations: 3 })).toBe(1);
+      expect(dq.trustWeight({ confirmations: 2 })).toBe(0.5);
+      dq.setVerifiedAt(5);
+      expect(dq.trustWeight({ confirmations: 3 })).toBe(0.5);
+      expect(dq.trustWeight({ confirmations: 5 })).toBe(1);
+      dq.setVerifiedAt(1); // nunca baja de 2
+      expect(dq.CONFIRMED_AT).toBe(2);
+      dq.setVerifiedAt(Number.NaN);
+      expect(dq.CONFIRMED_AT).toBe(2);
+    } finally {
+      dq.setVerifiedAt(before);
+    }
+  });
+
+  test('el caché conserva la caducidad, el estado resuelto, la foto y mi respuesta', () => {
+    const out = dq.sanitizeIncident(
+      { ...validIncident, expiresAt: validIncident.createdAt + 5 * 3_600_000, resolved: true, hasPhoto: true, status: 'active', presenceVote: false },
+      NOW,
+    );
+    expect(out).toMatchObject({ expiresAt: validIncident.createdAt + 5 * 3_600_000, resolved: true, hasPhoto: true, status: 'active', presenceVote: false });
+    // Lo que no tiene sentido se descarta: una caducidad anterior a la publicación o un estado inventado.
+    const bad = dq.sanitizeIncident({ ...validIncident, expiresAt: validIncident.createdAt - 1, status: 'hacked', presenceVote: 'si' }, NOW);
+    expect(bad?.expiresAt).toBeUndefined();
+    expect(bad?.status).toBeUndefined();
+    expect(bad?.presenceVote).toBeUndefined();
   });
 });
 

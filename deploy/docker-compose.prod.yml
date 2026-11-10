@@ -66,6 +66,13 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-600}
       PURGE_INTERVAL_MINUTES: ${PURGE_INTERVAL_MINUTES:-15}
+      # Vecinos distintos para que un aviso cuente como verificado (2 a 20).
+      VERIFIED_AT: ${VERIFIED_AT:-3}
+      # Borradores de episodio: avisos de emergencias en un municipio en 24 h y cuántos confirmados.
+      EPISODE_MIN_NOTICES: ${EPISODE_MIN_NOTICES:-6}
+      EPISODE_MIN_CONFIRMED: ${EPISODE_MIN_CONFIRMED:-3}
+      # Opcional: webhook de Slack, Discord o Mattermost que avisa de cada borrador nuevo.
+      ADMIN_WEBHOOK_URL: ${ADMIN_WEBHOOK_URL:-}
     depends_on:
       db:
         condition: service_healthy

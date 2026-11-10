@@ -1,7 +1,7 @@
 import { config } from '../config';
 import { pool } from '../db';
 import { categories } from '../routes/categories';
-import { haversineKm } from './quality';
+import { CONFIRMED_AT, haversineKm } from './quality';
 
 /**
  * Notificaciones de Radio Patio.
@@ -237,7 +237,7 @@ export async function notifyConfirmation(
     if (rows.length === 0) return;
     const cat = categoryOf(category);
     const name = cat ? `${cat.emoji} ${cat.label}` : 'tu aviso';
-    const verified = confirmations >= 2;
+    const verified = confirmations >= CONFIRMED_AT;
     const device = rows[0] as { id: string; push_token: string | null };
 
     // Si el autor aún no leyó la anterior, la bandeja la actualiza en vez de apilar una por vecino.

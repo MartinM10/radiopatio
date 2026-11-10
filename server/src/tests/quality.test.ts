@@ -6,6 +6,7 @@ import {
   findDuplicate,
   levelForScore,
   textSimilarity,
+  CONFIRMED_AT,
   trustWeight,
   type DedupRecord,
 } from '../lib/quality';
@@ -90,15 +91,19 @@ test('geo: snapToHexGrid idempotente sobre el centro de la celda (misma clave)',
   assert.strictEqual(again.key, first.key);
 });
 
-test('trustWeight: confirmado = 1, sin confirmar = 0.5', () => {
-  assert.strictEqual(trustWeight({ confirmations: 2 }), 1);
-  assert.strictEqual(trustWeight({ confirmations: 1 }), 0.5);
+test('trustWeight: verificado = 1, sin verificar = 0.5 (umbral VERIFIED_AT)', () => {
+  assert.ok(CONFIRMED_AT >= 2, 'el umbral nunca baja de 2 vecinos');
+  assert.strictEqual(trustWeight({ confirmations: CONFIRMED_AT }), 1);
+  assert.strictEqual(trustWeight({ confirmations: CONFIRMED_AT - 1 }), 0.5);
+  assert.strictEqual(trustWeight({ confirmations: 0 }), 0.5);
 });
 
-test('levelForScore: fronteras del nivel de alerta (solo confirmados cuentan)', () => {
+test('levelForScore: fronteras del nivel de zona (gravedad × peso, solo seguridad)', () => {
   assert.strictEqual(levelForScore(0), 'tranquilo');
-  assert.strictEqual(levelForScore(3), 'moderado');
-  assert.strictEqual(levelForScore(4), 'atencion');
-  assert.strictEqual(levelForScore(8), 'atencion');
-  assert.strictEqual(levelForScore(9), 'alerta');
+  assert.strictEqual(levelForScore(0.5), 'tranquilo', 'un vandalismo sin verificar no basta');
+  assert.strictEqual(levelForScore(1), 'moderado');
+  assert.strictEqual(levelForScore(1.5), 'moderado', 'una agresión sin verificar ya no es «tranquilo»');
+  assert.strictEqual(levelForScore(3), 'atencion', 'una agresión verificada es «atención»');
+  assert.strictEqual(levelForScore(5.5), 'atencion');
+  assert.strictEqual(levelForScore(6), 'alerta');
 });

@@ -17,7 +17,7 @@ import {
   sortIncidents,
   toggleCategory,
 } from '../lib/filters';
-import { isActive } from '../lib/privacy';
+import { isExpired } from '../lib/lifetime';
 import { NEARBY_RADIUS_M, getUserLocation } from '../lib/userLocation';
 import { useIncidents } from '../store';
 import { colors, radius } from '../theme';
@@ -75,7 +75,7 @@ export const FeedScreen = ({ onOpenIncident, onShowOnMap, onOpenNotifications }:
 
   // Base de la lista (modo y búsqueda), antes de filtrar por categoría: de ahí salen los contadores.
   const base = useMemo(() => {
-    let l = incidents.filter((i) => isActive(i.createdAt) && !i.flaggedByMe);
+    let l = incidents.filter((i) => !isExpired(i) && !i.flaggedByMe);
     if (mode === 'near') {
       l = userLoc
         ? l.filter((i) => i.zone.lat != null && i.zone.lng != null && haversineMeters(userLoc, { lat: i.zone.lat, lng: i.zone.lng }) <= NEARBY_RADIUS_M)
@@ -230,12 +230,12 @@ export const FeedScreen = ({ onOpenIncident, onShowOnMap, onOpenNotifications }:
                 {search.length > 0
                   ? `No encontramos avisos que coincidan con «${search}». Prueba con otro término.`
                   : cats.length > 0
-                    ? 'No hay avisos con los filtros elegidos en las últimas 72 horas.'
+                    ? 'No hay avisos con los filtros elegidos.'
                     : mode === 'mine'
                       ? 'Los avisos anónimos que publiques se gestionarán desde aquí.'
                       : mode === 'near' && !userLoc
                         ? 'Permite la ubicación para ver las incidencias registradas en tu entorno inmediato.'
-                        : 'No hay alertas activas durante las últimas 72 horas.'}
+                        : 'No hay alertas activas ahora mismo.'}
               </Text>
               {cats.length > 0 && (
                 <Pressable onPress={() => setCats([])} accessibilityRole="button" hitSlop={8}>

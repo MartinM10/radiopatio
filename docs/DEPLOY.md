@@ -89,4 +89,4 @@ instaladas salvo en `EXPO_PUBLIC_API_URL` (fijada en tiempo de build).
 AGPL-3.0-or-later (ver LICENSE). El plan de sostenibilidad y la regla «nunca se
 monetizan los datos del barrio» están en `docs/OPEN-SOURCE.md`. Los agregados que se
 ofrezcan a cualquier cliente (incluido un ayuntamiento) deben seguir las reglas de
-`docs/TRUST.md` §3: solo confirmados, muestra mínima, celdas aproximadas, caducidad 72 h.
+`docs/TRUST.md` §3: solo confirmados, muestra mínima, celdas aproximadas, caducidad por tipo (12 h a 7 días).

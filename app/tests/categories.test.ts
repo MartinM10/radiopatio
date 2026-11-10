@@ -18,11 +18,13 @@ describe('emergencias y clima', () => {
     expect(ids).toEqual(['inundacion', 'incendio', 'derrumbe', 'arbol', 'calle_cortada']);
   });
 
-  test('no cuentan para el nivel de seguridad; el resto sí', () => {
-    expect(countsForSafety('inundacion')).toBe(false);
-    expect(countsForSafety('calle_cortada')).toBe(false);
-    expect(countsForSafety('hogar')).toBe(true);
-    expect(countsForSafety('corte_agua')).toBe(true);
+  test('solo los avisos de seguridad cuentan para el nivel de la zona', () => {
+    for (const id of ['inundacion', 'calle_cortada', 'corte_agua', 'alumbrado', 'perdido', 'otro'] as const) {
+      expect(countsForSafety(id)).toBe(false);
+    }
+    for (const id of ['hogar', 'vehiculo', 'hurto', 'agresion', 'vandalismo', 'sospechoso', 'altercado'] as const) {
+      expect(countsForSafety(id)).toBe(true);
+    }
   });
 
   test('solo las graves piden llamar antes al 112', () => {
