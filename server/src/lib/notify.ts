@@ -32,11 +32,36 @@ export interface PushMessage {
   data: Record<string, unknown>;
 }
 
-/** Resultado por mensaje: token que Expo ya no reconoce → hay que olvidarlo. */
-export type PushSender = (messages: PushMessage[]) => Promise<{ invalidTokens: string[] }>;
+/** Un ticket «ok» de Expo: se consulta su recibo más tarde para saber si FCM entregó el mensaje. */
+export interface PushTicket {
+  id: string;
+  token: string;
+}
+
+/** Resultado de un envío: tokens que Expo ya no reconoce (hay que olvidarlos) y tickets por comprobar. */
+export type PushSender = (messages: PushMessage[]) => Promise<{ invalidTokens: string[]; tickets?: PushTicket[] }>;
+
+export interface PushReceipt {
+  status: 'ok' | 'error';
+  message?: string;
+  details?: { error?: string };
+}
+
+/** Recibos por id de ticket; los que Expo aún no tiene listos no aparecen. */
+export type ReceiptFetcher = (ids: string[]) => Promise<Record<string, PushReceipt>>;
+
+/** Los mensajes de error de Expo suelen citar el token: nunca se registra tal cual. */
+const redact = (s: unknown): string =>
+  String(s ?? '').replace(/Expo(?:nent)?PushToken\[[^\]]*\]/g, '<token>').slice(0, 300);
+
+/** Contadores desde el arranque, para ver de un vistazo si el push funciona. */
+export const pushStats = { ticketsOk: 0, ticketErrors: 0, receiptsOk: 0, receiptErrors: 0 };
+
+type ExpoTicket = { status?: string; id?: string; message?: string; details?: { error?: string } };
 
 const expoSender: PushSender = async (messages) => {
   const invalidTokens: string[] = [];
+  const tickets: PushTicket[] = [];
   // Expo admite hasta 100 mensajes por petición.
   for (let i = 0; i < messages.length; i += 100) {
     const chunk = messages.slice(i, i + 100);
@@ -47,14 +72,34 @@ const expoSender: PushSender = async (messages) => {
       body: JSON.stringify(chunk.map((m) => ({ ...m, sound: 'default', channelId: 'alerts', priority: 'high' }))),
     });
     if (!res.ok) throw new Error(`Expo push respondió ${res.status}`);
-    const body = (await res.json()) as { data?: Array<{ status?: string; details?: { error?: string } }> };
+    const body = (await res.json()) as { data?: ExpoTicket[] };
     (body.data ?? []).forEach((ticket, idx) => {
-      if (ticket.status === 'error' && ticket.details?.error === 'DeviceNotRegistered') {
+      if (ticket.status === 'ok' && ticket.id) {
+        pushStats.ticketsOk += 1;
+        tickets.push({ id: ticket.id, token: chunk[idx].to });
+        return;
+      }
+      pushStats.ticketErrors += 1;
+      if (ticket.details?.error === 'DeviceNotRegistered') {
         invalidTokens.push(chunk[idx].to);
+      } else {
+        console.error('[push] ticket con error:', ticket.details?.error ?? 'desconocido', redact(ticket.message));
       }
     });
   }
-  return { invalidTokens };
+  return { invalidTokens, tickets };
+};
+
+const expoReceipts: ReceiptFetcher = async (ids) => {
+  const res = await fetch(config.expoReceiptsUrl, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(8_000),
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error(`Expo recibos respondió ${res.status}`);
+  const body = (await res.json()) as { data?: Record<string, PushReceipt> };
+  return body.data ?? {};
 };
 
 let sender: PushSender = expoSender;
@@ -63,6 +108,87 @@ let sender: PushSender = expoSender;
 export function setPushSender(fn: PushSender | null): void {
   sender = fn ?? expoSender;
 }
+
+let receiptFetcher: ReceiptFetcher = expoReceipts;
+
+/** Para tests: sustituye la consulta de recibos (null restaura la de Expo). */
+export function setReceiptFetcher(fn: ReceiptFetcher | null): void {
+  receiptFetcher = fn ?? expoReceipts;
+}
+
+// Expo recomienda esperar unos 15 minutos antes de pedir un recibo, y los
+// conserva 24 h. Se guardan en memoria: si el servidor se reinicia se pierden
+// los pendientes, que solo sirven para ver fallos, no para entregar nada.
+const RECEIPT_WAIT_MS = 15 * 60_000;
+const RECEIPT_GIVE_UP_MS = 24 * 3_600_000;
+const RECEIPT_MAX_PENDING = 5000;
+const pendingReceipts = new Map<string, { token: string; at: number }>();
+
+/** Envía por Expo, olvida los tokens que ya no valen y anota los tickets para comprobarlos luego. */
+async function sendPush(messages: PushMessage[]): Promise<void> {
+  if (!config.pushEnabled || messages.length === 0) return;
+  const { invalidTokens, tickets } = await sender(messages);
+  if (invalidTokens.length > 0) {
+    await pool.query(`UPDATE devices SET push_token = NULL WHERE push_token = ANY($1)`, [invalidTokens]);
+  }
+  const now = Date.now();
+  for (const t of tickets ?? []) {
+    if (pendingReceipts.size >= RECEIPT_MAX_PENDING) {
+      const oldest = pendingReceipts.keys().next().value;
+      if (oldest !== undefined) pendingReceipts.delete(oldest);
+    }
+    pendingReceipts.set(t.id, { token: t.token, at: now });
+  }
+}
+
+/**
+ * Pregunta a Expo qué pasó con los mensajes enviados hace más de 15 minutos.
+ * Un recibo con error es un fallo de entrega (credenciales de FCM mal puestas,
+ * mensaje demasiado grande…) que de otro modo no se vería en ningún sitio.
+ */
+export async function processReceipts(now = Date.now()): Promise<{ checked: number; errors: number }> {
+  const due = [...pendingReceipts.entries()].filter(([, t]) => now - t.at >= RECEIPT_WAIT_MS);
+  let checked = 0;
+  let errors = 0;
+  for (let i = 0; i < due.length; i += 300) {
+    const chunk = due.slice(i, i + 300);
+    const receipts = await receiptFetcher(chunk.map(([id]) => id));
+    for (const [id, t] of chunk) {
+      const r = receipts[id];
+      if (!r) {
+        // Aún no está: se reintenta, salvo que ya haya pasado el plazo de Expo.
+        if (now - t.at > RECEIPT_GIVE_UP_MS) pendingReceipts.delete(id);
+        continue;
+      }
+      pendingReceipts.delete(id);
+      checked += 1;
+      if (r.status === 'ok') {
+        pushStats.receiptsOk += 1;
+        continue;
+      }
+      errors += 1;
+      pushStats.receiptErrors += 1;
+      if (r.details?.error === 'DeviceNotRegistered') {
+        await pool.query(`UPDATE devices SET push_token = NULL WHERE push_token = $1`, [t.token]);
+      } else {
+        console.error('[push] recibo con error:', r.details?.error ?? 'desconocido', redact(r.message));
+      }
+    }
+  }
+  return { checked, errors };
+}
+
+/** Comprueba los recibos cada 5 minutos mientras el servidor esté en marcha. */
+export function startReceiptPolling(): NodeJS.Timeout {
+  const timer = setInterval(() => {
+    processReceipts().catch((err) => console.error('[push] no se pudieron consultar los recibos:', redact(err instanceof Error ? err.message : err)));
+  }, 5 * 60_000);
+  timer.unref();
+  return timer;
+}
+
+/** Solo para tests: cuántos tickets esperan recibo. */
+export const pendingReceiptCount = () => pendingReceipts.size;
 
 interface Pending {
   deviceId: string;
@@ -87,15 +213,10 @@ async function deliver(list: Pending[]): Promise<void> {
         [n.deviceId, n.kind, n.incidentId, n.title, n.body],
       );
     }
-    if (!config.pushEnabled) return;
     const messages: PushMessage[] = list
       .filter((n): n is Pending & { pushToken: string } => Boolean(n.pushToken))
       .map((n) => ({ to: n.pushToken, title: n.title, body: n.body, data: { kind: n.kind, incidentId: n.incidentId } }));
-    if (messages.length === 0) return;
-    const { invalidTokens } = await sender(messages);
-    if (invalidTokens.length > 0) {
-      await pool.query(`UPDATE devices SET push_token = NULL WHERE push_token = ANY($1)`, [invalidTokens]);
-    }
+    await sendPush(messages);
   } catch (err) {
     console.error('[notificaciones] envío fallido:', err);
   }
@@ -134,11 +255,8 @@ export async function notifyConfirmation(
         title,
         body,
       ]);
-      if (config.pushEnabled && device.push_token) {
-        const { invalidTokens } = await sender([
-          { to: device.push_token, title, body, data: { kind: 'confirmation', incidentId } },
-        ]);
-        if (invalidTokens.length > 0) await pool.query(`UPDATE devices SET push_token = NULL WHERE id = $1`, [device.id]);
+      if (device.push_token) {
+        await sendPush([{ to: device.push_token, title, body, data: { kind: 'confirmation', incidentId } }]);
       }
       return;
     }
@@ -284,9 +402,8 @@ export async function notifyMessage(
           title,
           body,
         ]);
-        if (config.pushEnabled && r.push_token) {
-          const { invalidTokens } = await sender([{ to: r.push_token, title, body, data: { kind: 'message', incidentId } }]);
-          if (invalidTokens.length > 0) await pool.query(`UPDATE devices SET push_token = NULL WHERE id = $1`, [r.id]);
+        if (r.push_token) {
+          await sendPush([{ to: r.push_token, title, body, data: { kind: 'message', incidentId } }]);
         }
       } else {
         toInsert.push({ deviceId: r.id, pushToken: r.push_token, kind: 'message', incidentId, title, body });
