@@ -12,6 +12,7 @@ const settingsSchema = z.object({
   confirmations: z.boolean().optional(),
   nearby: z.boolean().optional(),
   watched: z.boolean().optional(),
+  messages: z.boolean().optional(),
   // Dónde está el vecino ahora; null la borra. El servidor guarda SOLO el centro de la celda.
   area: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).nullable().optional(),
 });
@@ -35,7 +36,7 @@ const invalid = (reply: FastifyReply, error: z.ZodError) =>
 
 const settingsFor = async (deviceId: string) => {
   const { rows } = await pool.query(
-    `SELECT notify_confirmations, notify_nearby, notify_watched, push_token, area_lat, area_lng FROM devices WHERE id = $1`,
+    `SELECT notify_confirmations, notify_nearby, notify_watched, notify_messages, push_token, area_lat, area_lng FROM devices WHERE id = $1`,
     [deviceId],
   );
   const d = rows[0];
@@ -43,6 +44,7 @@ const settingsFor = async (deviceId: string) => {
     confirmations: Boolean(d.notify_confirmations),
     nearby: Boolean(d.notify_nearby),
     watched: Boolean(d.notify_watched),
+    messages: Boolean(d.notify_messages),
     pushRegistered: d.push_token !== null,
     // Centro de la celda guardada (nunca la posición exacta); null si no hay.
     area: d.area_lat === null ? null : { lat: Number(d.area_lat), lng: Number(d.area_lng) },
@@ -121,7 +123,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     if (!device) return reply;
     const parsed = settingsSchema.safeParse(req.body);
     if (!parsed.success) return invalid(reply, parsed.error);
-    const { confirmations, nearby, watched, area } = parsed.data;
+    const { confirmations, nearby, watched, messages, area } = parsed.data;
 
     const sets: string[] = [];
     const params: unknown[] = [device.id];
@@ -132,6 +134,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     if (confirmations !== undefined) add('notify_confirmations', confirmations);
     if (nearby !== undefined) add('notify_nearby', nearby);
     if (watched !== undefined) add('notify_watched', watched);
+    if (messages !== undefined) add('notify_messages', messages);
     if (area === null) {
       sets.push('area_lat = NULL', 'area_lng = NULL', 'area_at = NULL');
     } else if (area) {

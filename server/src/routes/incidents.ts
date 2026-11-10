@@ -130,6 +130,10 @@ const rowToIncident = (r: IncidentRowLike, deviceHash: string): Incident => {
     confirmations: parseInt(String(r.confirmations_count), 10),
     mine: r.device_hash === deviceHash,
     hasPhoto: Boolean(r.has_photo),
+    // La consulta de arriba ya filtra WHERE status = 'active': toda fila que
+    // llega aquí lo es. Sin esto la app no sabía si el chat estaba disponible
+    // (quedaba undefined tras cualquier refresco de la lista).
+    status: 'active',
   };
 };
 
@@ -196,6 +200,7 @@ export async function incidentRoutes(app: FastifyInstance) {
         i.description,
         i.created_at,
         i.confirmations_count,
+        i.status,
         i.device_hash,
         i.hex_lat,
         i.hex_lng,
