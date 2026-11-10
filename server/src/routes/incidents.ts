@@ -97,6 +97,7 @@ interface IncidentRowLike {
   has_photo?: boolean;
   expires_at?: Date | string | null;
   resolved_at?: Date | string | null;
+  presence_vote?: boolean | null;
 }
 
 /** Coordenada pública: SIEMPRE el centro de la celda hex (~450 m); jamás la exacta. */
@@ -139,6 +140,7 @@ const rowToIncident = (r: IncidentRowLike, deviceHash: string): Incident => {
     status: 'active',
     expiresAt: r.expires_at ? new Date(r.expires_at).getTime() : createdMs + config.incidentTtlHours * 3_600_000,
     resolved: Boolean(r.resolved_at),
+    ...(r.presence_vote === null || r.presence_vote === undefined ? {} : { presenceVote: Boolean(r.presence_vote) }),
   };
 };
 
@@ -209,6 +211,7 @@ export async function incidentRoutes(app: FastifyInstance) {
         i.expires_at,
         i.resolved_at,
         (i.photo IS NOT NULL) AS has_photo,
+        pv.here AS presence_vote,
         (ic.device_hash IS NOT NULL) AS confirmed_by_me,
         (fl.device_hash IS NOT NULL) AS flagged_by_me
       FROM incidents i
@@ -216,6 +219,8 @@ export async function incidentRoutes(app: FastifyInstance) {
         ON ic.incident_id = i.id AND ic.device_hash = $1
       LEFT JOIN incident_flags fl
         ON fl.incident_id = i.id AND fl.device_hash = $1
+      LEFT JOIN incident_presence_votes pv
+        ON pv.incident_id = i.id AND pv.device_hash = $1
       WHERE ${conditions.join(' AND ')}
       ORDER BY i.created_at DESC
       LIMIT $${paramIndex}
@@ -478,11 +483,13 @@ export async function incidentRoutes(app: FastifyInstance) {
         i.description, i.created_at, i.confirmations_count, i.status, i.device_hash,
         i.hex_lat, i.hex_lng, i.expires_at, i.resolved_at,
         (i.photo IS NOT NULL) AS has_photo,
+        pv.here AS presence_vote,
         (ic.device_hash IS NOT NULL) AS confirmed_by_me,
         (fl.device_hash IS NOT NULL) AS flagged_by_me
       FROM incidents i
       LEFT JOIN incident_confirmations ic ON ic.incident_id = i.id AND ic.device_hash = $2
       LEFT JOIN incident_flags fl ON fl.incident_id = i.id AND fl.device_hash = $2
+      LEFT JOIN incident_presence_votes pv ON pv.incident_id = i.id AND pv.device_hash = $2
       WHERE i.id = $1 AND ${liveSql('i.')}
     `;
     const { rows } = await pool.query(sql, [id, deviceHash]);

@@ -166,6 +166,14 @@ test('«¿sigue ahí?»: solo amplía en la segunda mitad, una vez por cuenta y 
     const early = JSON.parse((await post(app, url, 'here-a', { here: true })).body).data as { extended: boolean };
     assert.strictEqual(early.extended, false);
 
+    // Cada cuenta ve su propia respuesta y nadie más la ve.
+    const seenBy = async (label: string) =>
+      (JSON.parse((await app.inject({ method: 'GET', url: `/api/incidents/${created.id}`, headers: await devHeaders(`${label}-${tag}`) })).body).data as { presenceVote?: boolean }).presenceVote;
+    assert.strictEqual(await seenBy('here-a'), true);
+    assert.strictEqual(await seenBy('here-otro'), undefined);
+    const listed = (JSON.parse((await app.inject({ method: 'GET', url: '/api/incidents', headers: await devHeaders(`here-a-${tag}`) })).body).data as { id: string; presenceVote?: boolean }[]).find((i) => i.id === created.id);
+    assert.strictEqual(listed?.presenceVote, true, 'también en la lista');
+
     // En la segunda mitad de su vida, otra cuenta sí amplía la mitad de su duración base.
     await age(created.id, 40 * H, 8 * H);
     const before = new Date((await row(created.id))!.expires_at).getTime();

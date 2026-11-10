@@ -60,6 +60,8 @@ export interface Incident {
   expiresAt?: number;
   /** El autor o los vecinos lo han dado por resuelto: desaparece en pocas horas. */
   resolved?: boolean;
+  /** Mi respuesta a «¿sigue ahí?»: true = sigue, false = ya no está; ausente si no he respondido. */
+  presenceVote?: boolean;
 }
 
 export interface IncidentRow {
