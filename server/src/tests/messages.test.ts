@@ -237,3 +237,24 @@ test('foto: un aviso sin foto responde 404 en /photo', async () => {
     await app.close();
   }
 });
+
+test('GET /api/incidents/:id: un aviso suelto, público, para compartir o resolver un push', async () => {
+  const app = buildApp();
+  try {
+    const inc = await publish(app, 'single-get-author');
+    const res = await app.inject({ method: 'GET', url: `/api/incidents/${inc.id}` });
+    assert.strictEqual(res.statusCode, 200, res.body);
+    const data = JSON.parse(res.body).data;
+    assert.strictEqual(data.id, inc.id);
+    assert.strictEqual(data.status, 'active');
+
+    const gone = await app.inject({ method: 'GET', url: '/api/incidents/no-existe' });
+    assert.strictEqual(gone.statusCode, 404);
+
+    await pool.query(`UPDATE incidents SET status = 'hidden' WHERE id = $1`, [inc.id]);
+    const hidden = await app.inject({ method: 'GET', url: `/api/incidents/${inc.id}` });
+    assert.strictEqual(hidden.statusCode, 404, 'un aviso oculto no debe poder compartirse ni resolverse');
+  } finally {
+    await app.close();
+  }
+});

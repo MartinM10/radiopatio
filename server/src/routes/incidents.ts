@@ -455,6 +455,37 @@ export async function incidentRoutes(app: FastifyInstance) {
     return reply.status(201).send({ data: created });
   });
 
+  // GET /api/incidents/:id — un único aviso, público como el resto (para
+  // compartir un enlace y para que la app resuelva un aviso que no tenga en
+  // su caché local, por ejemplo al abrir un push de uno ya purgado del caché).
+  app.get<{ Params: { id: string } }>('/api/incidents/:id', async (req, reply) => {
+    const { id } = req.params;
+    const deviceHash = await resolveReadHash(req);
+
+    const sql = `
+      SELECT
+        i.id, i.category, i.grid_x, i.grid_y, i.lat, i.lng, i.address,
+        i.description, i.created_at, i.confirmations_count, i.status, i.device_hash,
+        i.hex_lat, i.hex_lng,
+        (i.photo IS NOT NULL) AS has_photo,
+        (ic.device_hash IS NOT NULL) AS confirmed_by_me,
+        (fl.device_hash IS NOT NULL) AS flagged_by_me
+      FROM incidents i
+      LEFT JOIN incident_confirmations ic ON ic.incident_id = i.id AND ic.device_hash = $2
+      LEFT JOIN incident_flags fl ON fl.incident_id = i.id AND fl.device_hash = $2
+      WHERE i.id = $1 AND i.status = 'active'
+    `;
+    const { rows } = await pool.query(sql, [id, deviceHash]);
+    if (rows.length === 0) {
+      return reply.status(404).send({ error: 'INCIDENT_NOT_FOUND', message: 'Aviso no encontrado o inactivo' });
+    }
+    const r = rows[0];
+    const inc = rowToIncident(r as IncidentRowLike, deviceHash);
+    inc.confirmedByMe = Boolean(r.confirmed_by_me);
+    inc.flaggedByMe = Boolean(r.flagged_by_me);
+    return { data: inc };
+  });
+
   // POST /api/incidents/:id/confirm
   app.post<{ Params: { id: string } }>(
     '/api/incidents/:id/confirm',
