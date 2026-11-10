@@ -24,7 +24,8 @@ export type AppIconName =
   | 'trash'
   | 'x'
   | 'camera'
-  | 'send';
+  | 'send'
+  | 'share';
 
 interface Props {
   name: AppIconName;
@@ -193,6 +194,14 @@ export const AppIcon: React.FC<Props> = ({
       {name === 'send' && (
         <>
           <Path d="M4 12l16-7-6.5 16-2.7-6.8L4 12z" {...p} />
+        </>
+      )}
+
+      {name === 'share' && (
+        <>
+          <Path d="M12 3v12" {...p} />
+          <Path d="M8 7l4-4 4 4" {...p} />
+          <Path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" {...p} />
         </>
       )}
     </Svg>

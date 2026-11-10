@@ -147,6 +147,20 @@ export function incidentPhotoUrl(id: string): string {
   return `${getApiBaseUrl()}/api/incidents/${id}/photo`;
 }
 
+/**
+ * Enlace para compartir un aviso. Vive en la landing (no en la API) porque
+ * quien no tiene la app necesita una página que abra en cualquier navegador,
+ * con un resumen del aviso y el enlace a la tienda. Con la app instalada,
+ * hoy solo abre esa misma página: enlazar directo a la app (Android App
+ * Links) exige verificar el dominio en Play Console, un paso aparte.
+ */
+export function incidentShareUrl(id: string): string {
+  return `https://radiopatio.app/a.html?id=${id}`;
+}
+
+/** Enlace para invitar a alguien que todavía no tiene la app. */
+export const APP_SHARE_URL = 'https://radiopatio.app/';
+
 export async function apiGetMessages(incidentId: string): Promise<IncidentMessage[]> {
   const res = await apiFetch<{ data: IncidentMessage[] }>(`/api/incidents/${incidentId}/messages`);
   return res.data;

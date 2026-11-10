@@ -1,15 +1,15 @@
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '../components/AppIcon';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { useIdentity } from '../components/IdentityGate';
 import { categoryById } from '../data/categories';
-import { IncidentMessage } from '../data/types';
+import { Incident, IncidentMessage } from '../data/types';
 import { areaName } from '../data/neighborhood';
 import { readableAddress } from '../lib/address';
-import { ApiError, apiAppealIncident, apiGetMessages, apiPostMessage, incidentPhotoUrl } from '../lib/api';
+import { ApiError, apiAppealIncident, apiGetMessages, apiPostMessage, incidentPhotoUrl, incidentShareUrl } from '../lib/api';
 import { HOURS_VISIBLE, checkText, timeAgo } from '../lib/privacy';
 import { useIncidents } from '../store';
 import { colors, radius, severityColor, severityLabel } from '../theme';
@@ -96,6 +96,14 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
       .then(() => Alert.alert('Recurso enviado', 'Tu aviso volverá a revisión. Gracias por tu paciencia.'))
       .catch(() => Alert.alert('Error', 'No se pudo enviar el recurso.'));
 
+  const onShare = (inc: Incident) => {
+    const where = readableAddress(inc.zone.address) ?? areaName(inc.zone);
+    const label = categoryById(inc.category).label;
+    Share.share({
+      message: `${label} cerca de ${where} — Radio Patio\n${incidentShareUrl(inc.id)}`,
+    }).catch(() => {});
+  };
+
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
       {header}
@@ -175,6 +183,11 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
             <Text style={styles.secondaryText}>Ver en el mapa</Text>
           </Pressable>
         )}
+
+        <Pressable onPress={() => onShare(incident)} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.85 }]}>
+          <AppIcon name="share" color={colors.primary} size={16} />
+          <Text style={styles.secondaryText}>Compartir este aviso</Text>
+        </Pressable>
 
         {incident.status === 'active' && <Chat incidentId={incident.id} requireIdentity={requireIdentity} />}
 

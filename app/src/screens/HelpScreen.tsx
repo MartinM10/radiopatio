@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '../components/AppIcon';
-import { apiDeleteIdentity, isDeviceVerified } from '../lib/api';
+import { APP_SHARE_URL, apiDeleteIdentity, isDeviceVerified } from '../lib/api';
 import { useIncidents } from '../store';
 import { colors, radius } from '../theme';
 
@@ -22,6 +22,10 @@ const rules = [
 export const HelpScreen = ({ onOpenOnboarding }: { onOpenOnboarding?: () => void }) => {
   const { reset } = useIncidents();
   const call = (n: string) => Linking.openURL(`tel:${n}`).catch(() => {});
+  const inviteNeighbor = () =>
+    Share.share({
+      message: `Uso Radio Patio para saber qué pasa en mi barrio, de forma anónima. Échale un vistazo: ${APP_SHARE_URL}`,
+    }).catch(() => {});
   const [verified, setVerified] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -65,6 +69,11 @@ export const HelpScreen = ({ onOpenOnboarding }: { onOpenOnboarding?: () => void
           <Text style={styles.onboardingBtnText}>Ver principios y privacidad de la app</Text>
         </Pressable>
       )}
+
+      <Pressable style={styles.onboardingBtn} onPress={inviteNeighbor}>
+        <AppIcon name="share" color={colors.primary} size={20} />
+        <Text style={styles.onboardingBtnText}>Invitar a un vecino</Text>
+      </Pressable>
 
       <Text style={styles.h}>Teléfonos útiles</Text>
       {numbers.map((x) => (
