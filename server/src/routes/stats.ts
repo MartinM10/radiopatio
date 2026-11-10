@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db';
 import { isAdmin } from '../lib/admin';
+import { slugify } from '../lib/episodes';
 import { dailyStats, knownMunicipalities, summarize } from '../lib/stats';
 
 /**
@@ -39,15 +40,7 @@ const episodeSchema = z
   .refine((v) => v.startsOn <= v.endsOn, { message: 'startsOn no puede ser posterior a endsOn', path: ['startsOn'] })
   .refine((v) => daysBetween(v.startsOn, v.endsOn) < MAX_EPISODE_DAYS, { message: `Un episodio no puede durar más de ${MAX_EPISODE_DAYS} días`, path: ['endsOn'] });
 
-/** «Temporal del 8 y 9 de noviembre» → «temporal-del-8-y-9-de-noviembre». */
-export const slugify = (name: string): string =>
-  name
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80);
+export { slugify };
 
 interface EpisodeRow {
   slug: string;
@@ -55,9 +48,11 @@ interface EpisodeRow {
   municipalities: string[];
   starts_on: string;
   ends_on: string;
+  status: string;
+  reason: string | null;
 }
 
-const EPISODE_COLS = `slug, name, municipalities, to_char(starts_on, 'YYYY-MM-DD') AS starts_on, to_char(ends_on, 'YYYY-MM-DD') AS ends_on`;
+const EPISODE_COLS = `slug, name, municipalities, to_char(starts_on, 'YYYY-MM-DD') AS starts_on, to_char(ends_on, 'YYYY-MM-DD') AS ends_on, status, reason`;
 const presentEpisode = (e: EpisodeRow) => ({
   slug: e.slug,
   name: e.name,
@@ -65,6 +60,18 @@ const presentEpisode = (e: EpisodeRow) => ({
   startsOn: e.starts_on,
   endsOn: e.ends_on,
 });
+/** Para el moderador: además, si es un borrador y por qué se propuso. */
+const presentForAdmin = (e: EpisodeRow) => ({ ...presentEpisode(e), status: e.status, reason: e.reason });
+
+// Cambios que el moderador puede hacer al publicar un borrador.
+const publishSchema = z
+  .object({
+    name: z.string().trim().min(3).max(120).optional(),
+    municipalities: z.array(z.string().trim().min(2).max(80)).min(1).max(30).optional(),
+    startsOn: dayStr.optional(),
+    endsOn: dayStr.optional(),
+  })
+  .default({});
 
 const unauthorized = (reply: FastifyReply) =>
   reply.status(401).send({ error: 'UNAUTHORIZED', message: 'Falta o es inválido el x-admin-token.' });
@@ -90,14 +97,14 @@ export async function statsRoutes(app: FastifyInstance) {
 
   // GET /api/episodes
   app.get('/api/episodes', async (_req, reply) => {
-    const { rows } = await pool.query<EpisodeRow>(`SELECT ${EPISODE_COLS} FROM episodes ORDER BY starts_on DESC, id DESC LIMIT 50`);
+    const { rows } = await pool.query<EpisodeRow>(`SELECT ${EPISODE_COLS} FROM episodes WHERE status = 'published' ORDER BY starts_on DESC, id DESC LIMIT 50`);
     reply.header('Cache-Control', 'public, max-age=300');
     return { data: rows.map(presentEpisode) };
   });
 
   // GET /api/episodes/:slug — el balance del episodio
   app.get<{ Params: { slug: string } }>('/api/episodes/:slug', async (req, reply) => {
-    const { rows } = await pool.query<EpisodeRow>(`SELECT ${EPISODE_COLS} FROM episodes WHERE slug = $1`, [req.params.slug]);
+    const { rows } = await pool.query<EpisodeRow>(`SELECT ${EPISODE_COLS} FROM episodes WHERE slug = $1 AND status = 'published'`, [req.params.slug]);
     if (rows.length === 0) {
       return reply.status(404).send({ error: 'EPISODE_NOT_FOUND', message: 'Episodio no encontrado' });
     }
@@ -141,6 +148,61 @@ export async function statsRoutes(app: FastifyInstance) {
       throw err;
     }
     return reply.status(201).send({ data: { slug, name, municipalities, startsOn, endsOn } });
+  });
+
+  // GET /api/admin/episodes?status=draft|published — borradores sugeridos y publicados
+  app.get<{ Querystring: { status?: string } }>('/api/admin/episodes', async (req, reply) => {
+    if (!isAdmin(req)) return unauthorized(reply);
+    const status = req.query.status === 'draft' || req.query.status === 'published' ? req.query.status : null;
+    const { rows } = await pool.query<EpisodeRow>(
+      `SELECT ${EPISODE_COLS} FROM episodes WHERE ($1::text IS NULL OR status = $1) ORDER BY (status = 'draft') DESC, starts_on DESC, id DESC LIMIT 100`,
+      [status],
+    );
+    return { data: rows.map(presentForAdmin) };
+  });
+
+  // POST /api/admin/episodes/:slug/publish — aprueba un borrador (y opcionalmente lo corrige)
+  app.post<{ Params: { slug: string } }>('/api/admin/episodes/:slug/publish', async (req, reply) => {
+    if (!isAdmin(req)) return unauthorized(reply);
+    const parsed = publishSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', details: parsed.error.format() });
+    }
+    const found = await pool.query<EpisodeRow>(`SELECT ${EPISODE_COLS} FROM episodes WHERE slug = $1`, [req.params.slug]);
+    if (found.rows.length === 0) {
+      return reply.status(404).send({ error: 'EPISODE_NOT_FOUND', message: 'Episodio no encontrado' });
+    }
+    const cur = found.rows[0];
+    if (cur.status === 'published') {
+      return reply.status(409).send({ error: 'ALREADY_PUBLISHED', message: 'Este episodio ya está publicado.' });
+    }
+    const name = parsed.data.name ?? cur.name;
+    const startsOn = parsed.data.startsOn ?? cur.starts_on;
+    const endsOn = parsed.data.endsOn ?? cur.ends_on;
+    if (startsOn > endsOn) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'startsOn no puede ser posterior a endsOn' });
+    }
+    if (daysBetween(startsOn, endsOn) >= MAX_EPISODE_DAYS) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: `Un episodio no puede durar más de ${MAX_EPISODE_DAYS} días` });
+    }
+    // Si lo renombra, el enlace público se rehace con el nombre nuevo; si no, conserva el del borrador.
+    const slug = parsed.data.name ? slugify(name) : cur.slug;
+    if (!slug) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'El nombre debe tener letras o números.' });
+    }
+    try {
+      await pool.query(
+        `UPDATE episodes SET slug = $2, name = $3, municipalities = $4, starts_on = $5::date, ends_on = $6::date, status = 'published'
+         WHERE slug = $1`,
+        [cur.slug, slug, name, parsed.data.municipalities ?? cur.municipalities, startsOn, endsOn],
+      );
+    } catch (err) {
+      if ((err as { code?: string }).code === '23505') {
+        return reply.status(409).send({ error: 'SLUG_TAKEN', message: 'Ya hay un episodio con ese nombre. Cambia el nombre.' });
+      }
+      throw err;
+    }
+    return { data: { slug, name, municipalities: parsed.data.municipalities ?? cur.municipalities, startsOn, endsOn, status: 'published' } };
   });
 
   // DELETE /api/admin/episodes/:slug

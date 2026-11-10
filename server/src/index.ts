@@ -5,6 +5,7 @@ import { runMigrations } from './db/migrate';
 import { seedIfEmpty } from './db/seed';
 import { purgeExpiredIncidents } from './db/purge';
 import { backfillMunicipalities } from './lib/municipality';
+import { detectEpisodeSuggestions } from './lib/episodes';
 import { startReceiptPolling } from './lib/notify';
 
 async function start() {
@@ -44,7 +45,9 @@ async function start() {
       .then((n) => {
         if (n > 0) console.log(`[retención] ${n} avisos caducados purgados`);
       })
-      .catch((err) => console.error('[retención] purga fallida:', err));
+      .catch((err) => console.error('[retención] purga fallida:', err))
+      .then(() => detectEpisodeSuggestions())
+      .catch((err) => console.error('[episodios] detección fallida:', err));
   }, config.purgeIntervalMinutes * 60_000);
   purgeTimer.unref();
 

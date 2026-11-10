@@ -7,7 +7,7 @@ import { runMigrations } from '../db/migrate';
 import { purgeExpiredIncidents } from '../db/purge';
 import { setPushSender } from '../lib/notify';
 import { CONFIRMED_AT } from '../lib/quality';
-import { slugify } from '../routes/stats';
+import { slugify } from '../lib/episodes';
 import { devHeaders } from './helpers';
 
 // Municipios inventados y únicos por ejecución: la BD persiste entre ejecuciones.

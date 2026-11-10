@@ -65,6 +65,12 @@ export const config = {
   // Tope por dispositivo y hora: un barrio movido no debe convertir el móvil en una sirena.
   notifyMaxPerHour: parseInt(process.env.NOTIFY_MAX_PER_HOUR || '6', 10),
   maxWatchedZones: parseInt(process.env.MAX_WATCHED_ZONES || '5', 10),
+  // Borradores de episodio: avisos de emergencias en un municipio en 24 h, y cuántos de ellos
+  // confirmados por otro vecino, para proponer un episodio a un moderador.
+  episodeMinNotices: parseInt(process.env.EPISODE_MIN_NOTICES || '6', 10),
+  episodeMinConfirmed: parseInt(process.env.EPISODE_MIN_CONFIRMED || '3', 10),
+  // Opcional: URL de un webhook (Slack, Discord, Mattermost) al que se avisa de cada borrador nuevo.
+  adminWebhookUrl: process.env.ADMIN_WEBHOOK_URL || '',
   // Chat anónimo por aviso: mensajes por dispositivo y hora.
   messageRateMax: parseInt(process.env.MESSAGE_RATE_MAX || '30', 10),
 

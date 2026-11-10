@@ -190,3 +190,9 @@ CREATE TABLE IF NOT EXISTS incident_presence_votes (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (incident_id, device_hash)
 );
+
+-- Episodios sugeridos por el servidor al detectar un pico de avisos de emergencias:
+-- nacen como borrador (privado) hasta que un moderador los publica.
+ALTER TABLE episodes ADD COLUMN IF NOT EXISTS status VARCHAR(10) NOT NULL DEFAULT 'published';
+ALTER TABLE episodes ADD COLUMN IF NOT EXISTS reason TEXT;
+ALTER TABLE episodes ADD COLUMN IF NOT EXISTS suggested_at TIMESTAMPTZ;
