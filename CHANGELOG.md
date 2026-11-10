@@ -7,6 +7,40 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.6.0](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.5.1...radiopatio-v1.6.0) (2026-11-10)
+
+
+### ✨ Funcionalidades
+
+* **app,landing:** share a notice and invite a neighbor ([4a282ae](https://github.com/MartinM10/radiopatio/commit/4a282aee7b33248edd6ded4c56d0b064f7c960c1))
+* **app:** optional photo on notices and an anonymous per-notice chat ([c590d75](https://github.com/MartinM10/radiopatio/commit/c590d75a7e10481b910fc8cbbd94245ff5ab396c))
+* **app:** per-notice lifetimes, 'still there?', resolve, server-driven threshold and one zone scale ([1faabf5](https://github.com/MartinM10/radiopatio/commit/1faabf54117e5a7f1533ab2d5de118db55051a76))
+* **chat:** label who writes as author or numbered neighbour ([8616970](https://github.com/MartinM10/radiopatio/commit/8616970e723dfccad50aaec9363c6490df51e5b0))
+* **landing:** damage balance page, and fix mobile side margin on all landing pages ([08bb15d](https://github.com/MartinM10/radiopatio/commit/08bb15d007e934c472cb4d1df02a85e7780b87b8))
+* **server:** anonymous per-notice chat and optional photos ([7bdd707](https://github.com/MartinM10/radiopatio/commit/7bdd70780c16247802c159213665f42a49767cb0))
+* **server:** check Expo push receipts and log delivery failures ([5543241](https://github.com/MartinM10/radiopatio/commit/554324154b1b5a45fec7d9b5fd3a2040c2c5564c))
+* **server:** one-scale zone level over security notices, and episode balance shows the threshold ([a126b69](https://github.com/MartinM10/radiopatio/commit/a126b69b4d96bf5e4582befdc1a7aeebf0c1e3b3))
+* **server:** per-category lifetimes, 'still there?' votes and a single verification threshold ([28f388f](https://github.com/MartinM10/radiopatio/commit/28f388f5b293a5c84a98786c979ec7d30dbf08c7))
+* **server:** public daily stats and moderator-defined episodes ([3d1da5a](https://github.com/MartinM10/radiopatio/commit/3d1da5a1059b353e6efa3ffee4cc672107dae270))
+* **server:** public single-incident endpoint for sharing and deep resolution ([cd4a557](https://github.com/MartinM10/radiopatio/commit/cd4a557d020e56f2de160314a4f73d90bfeba74e))
+* **server:** return the caller's own 'still there?' answer with each notice ([9c93d84](https://github.com/MartinM10/radiopatio/commit/9c93d84e4facb58e57247cbc1ed3efcd55748ba0))
+* **server:** suggest episode drafts when emergency notices spike ([a4618b8](https://github.com/MartinM10/radiopatio/commit/a4618b8ed89a55b1637b8b609e1676c6c7af88cf))
+
+
+### 🐛 Correcciones
+
+* **landing:** show the real logo in the footer instead of a placeholder icon ([1e87960](https://github.com/MartinM10/radiopatio/commit/1e87960c9ed7fc50c8a69e692aea7d870de81583))
+* **server:** delete a device's chat messages when it deletes its identity ([fbeb51a](https://github.com/MartinM10/radiopatio/commit/fbeb51af74e4b4d9f2b87361cef1057acfc8a799))
+* **server:** include status in incident list responses; expose chat notification setting ([b00af5b](https://github.com/MartinM10/radiopatio/commit/b00af5b30f57ba2dceeab8447295732a6eee70bb))
+
+
+### 📝 Documentación
+
+* backlog of pending work for whoever picks the project up ([47e932a](https://github.com/MartinM10/radiopatio/commit/47e932ad7a0cc20b7c383b727d841715f9d4a578))
+* **landing:** privacy policy and terms for photos, chat and Cloudflare ([1efd217](https://github.com/MartinM10/radiopatio/commit/1efd217ce755c8aeb17a9b24ae8b59fe818a12b2))
+* lifetimes, threshold of 3, zone level and episode drafts across the web and docs ([4d345d8](https://github.com/MartinM10/radiopatio/commit/4d345d8261e42323f274557bc118f2f7c1c490a9))
+* update the backlog and list what to declare in Play's data safety form ([729c466](https://github.com/MartinM10/radiopatio/commit/729c4662a9d740d113526ddc552a563d5b4dc6cf))
+
 ## [1.5.1](https://github.com/MartinM10/radiopatio/compare/radiopatio-v1.5.0...radiopatio-v1.5.1) (2026-11-09)
 
 
