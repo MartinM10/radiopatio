@@ -21,10 +21,15 @@ test.after(async () => {
   await pool.end();
 });
 
-/** Celda propia y lejana para no chocar con dedup ni cuarentena de otros tests. */
+/**
+ * Celda propia y lejana para no chocar con dedup ni cuarentena de otros tests.
+ * La base de desarrollo conserva los avisos 72 h, así que la caja debe ser
+ * grande (~30 km, unas 3.000 celdas) para que repetir la suite no colisione, y
+ * menor que TELEPORT_KM (50) para no disparar el control anti-teletransporte.
+ */
 const uniqueZone = () => ({
-  lat: 36.8 + Math.random() * 0.05,
-  lng: -4.6 - Math.random() * 0.05,
+  lat: 36.5 + Math.random() * 0.3,
+  lng: -4.9 - Math.random() * 0.3,
 });
 
 const incidentPayload = () => ({
