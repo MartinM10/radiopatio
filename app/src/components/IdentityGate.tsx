@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  body: { color: colors.textMuted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  title: { color: colors.text, fontSize: 22, fontFamily: 'PlusJakartaSans_800ExtraBold', textAlign: 'center' },
+  body: { color: colors.textMuted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 15, lineHeight: 22, textAlign: 'center' },
   points: {
     alignSelf: 'stretch',
     gap: 10,
@@ -143,8 +143,8 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   point: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  pointText: { flex: 1, color: colors.textMuted, fontSize: 13, lineHeight: 19 },
-  error: { color: colors.danger, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  pointText: { flex: 1, color: colors.textMuted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, lineHeight: 19 },
+  error: { color: colors.danger, fontSize: 13, fontFamily: 'PlusJakartaSans_600SemiBold', textAlign: 'center' },
   cta: {
     alignSelf: 'stretch',
     backgroundColor: colors.primary,
@@ -153,8 +153,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  ctaText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: 16, fontFamily: 'PlusJakartaSans_800ExtraBold' },
   later: { paddingVertical: 6 },
-  laterText: { color: colors.muted, fontSize: 14, fontWeight: '700' },
-  devSkip: { color: colors.warn, fontSize: 12, fontWeight: '700' },
+  laterText: { color: colors.muted, fontSize: 14, fontFamily: 'PlusJakartaSans_700Bold' },
+  devSkip: { color: colors.warn, fontSize: 12, fontFamily: 'PlusJakartaSans_700Bold' },
 });

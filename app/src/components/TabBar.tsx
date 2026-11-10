@@ -55,7 +55,7 @@ export const TabBar = ({ active, onChange, onReport }: Props) => {
 
   const tab = (id: TabId) => {
     const on = active === id;
-    const color = on ? colors.text : colors.muted;
+    const color = on ? colors.primary : colors.muted;
     return (
       <Pressable
         key={id}
@@ -67,13 +67,13 @@ export const TabBar = ({ active, onChange, onReport }: Props) => {
       >
         <Icon id={id} color={color} />
         <Text style={[styles.label, { color }]}>{labels[id]}</Text>
-        <View style={[styles.dot, on && styles.dotOn]} />
       </Pressable>
     );
   };
 
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+      <View style={styles.bar}>
       {tab('map')}
       {tab('feed')}
       <View style={styles.fabSlot}>
@@ -88,46 +88,45 @@ export const TabBar = ({ active, onChange, onReport }: Props) => {
             <Line x1="5" y1="12" x2="19" y2="12" stroke="#FFFFFF" strokeWidth={2.8} strokeLinecap="round" />
           </Svg>
         </Pressable>
-        <Text style={[styles.label, { color: colors.primary, marginTop: -2 }]}>Avisar</Text>
+        <Text style={[styles.label, { color: colors.alert }]}>Avisar</Text>
       </View>
       {tab('help')}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Franja blanca que continúa el panel inferior; dentro, la barra en forma de píldora.
+  wrap: { backgroundColor: colors.surface, paddingHorizontal: 14, paddingTop: 6 },
   bar: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.line,
-    paddingTop: 8,
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingVertical: 7,
   },
-  tab: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 4 },
-  label: { fontSize: 11, fontWeight: '700' },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'transparent', marginTop: 1 },
-  dotOn: { backgroundColor: colors.primary },
-  fabSlot: { flex: 1, alignItems: 'center', gap: 4 },
+  tab: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 2 },
+  label: { fontSize: 11, fontFamily: 'PlusJakartaSans_700Bold' },
+  fabSlot: { flex: 1, alignItems: 'center' },
   fab: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    marginTop: -26,
-    backgroundColor: colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginTop: -22,
+    marginBottom: -2,
+    backgroundColor: colors.alert,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: colors.bg,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.65,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: colors.surface,
+    shadowColor: colors.alert,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  fabPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.94 }],
-    shadowOpacity: 0.9,
-  },
+  fabPressed: { opacity: 0.9, transform: [{ scale: 0.94 }] },
 });

@@ -1,3 +1,10 @@
+import {
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
@@ -36,6 +43,15 @@ export default function App() {
     setNotifOpen(false);
     setDetailId(id);
   }, []);
+
+  // La fuente se carga antes de pintar; si fallara, la app sigue con la del sistema.
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+  if (!fontsLoaded && !fontError) return <View style={styles.root} />;
 
   return (
     <SafeAreaProvider>

@@ -41,7 +41,7 @@ export const IncidentRow = ({
       accessibilityLabel={`${cat.label}, ${place}, ${timeAgo(incident.createdAt)}. Abrir aviso`}
       style={({ pressed }) => [styles.row, highlighted && styles.rowOn, pressed && { opacity: 0.85 }]}
     >
-      <View style={[styles.icon, { backgroundColor: sev + '22', borderColor: sev + '55' }]}>
+      <View style={[styles.icon, { backgroundColor: sev + '26' }]}>
         <CategoryIcon id={incident.category} color={sev} size={20} strokeWidth={2.2} />
       </View>
 
@@ -84,17 +84,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  rowOn: { borderColor: colors.accent, backgroundColor: 'rgba(79,70,229,0.05)' },
-  icon: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  rowOn: { borderColor: colors.accent, backgroundColor: colors.primarySoft },
+  icon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   main: { flex: 1, gap: 1 },
-  title: { color: colors.text, fontSize: 15, fontWeight: '800' },
-  meta: { color: colors.muted, fontSize: 12 },
-  desc: { color: colors.textMuted, fontSize: 13, lineHeight: 18, marginTop: 2 },
+  title: { color: colors.text, fontSize: 15, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  meta: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12 },
+  desc: { color: colors.textMuted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, lineHeight: 18, marginTop: 2 },
   confirm: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -105,6 +105,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   confirmDone: { backgroundColor: 'rgba(16,185,129,0.12)' },
-  confirmText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
-  mine: { color: colors.accent, fontSize: 11, fontWeight: '800', backgroundColor: colors.surface2, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, overflow: 'hidden' },
+  confirmText: { color: colors.primary, fontSize: 12, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  mine: { color: colors.accent, fontSize: 11, fontFamily: 'PlusJakartaSans_800ExtraBold', backgroundColor: colors.surface2, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, overflow: 'hidden' },
 });

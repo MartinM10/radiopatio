@@ -23,7 +23,7 @@ import { buildHexGridForIncidents } from '../lib/hexgrid';
 import { clusterIncidents, clusterOf } from '../lib/mapData';
 import { NEARBY_RADIUS_M, getUserLocation } from '../lib/userLocation';
 import { useIncidents } from '../store';
-import { colors, radius } from '../theme';
+import { colors, font, shadow } from '../theme';
 
 interface HomeProps {
   /** Aviso a centrar en el mapa (desde «Ver en el mapa»); cambia `focusNonce` en cada petición. */
@@ -177,71 +177,85 @@ export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident, onO
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>
-            Mapa vecinal
-          </Text>
-
-          <BellButton onPress={onOpenNotifications} />
-
-          <Pressable
-            onPress={locate}
-            accessibilityRole="button"
-            accessibilityLabel="Centrar el mapa en mi ubicación"
-            style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.8 }]}
-          >
-            <AppIcon name="locate" color={colors.text} size={20} />
-          </Pressable>
-
-          <Pressable
-            onPress={() => setFiltersOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel={filterCount > 0 ? `Filtros, ${filterCount} activos` : 'Filtros'}
-            style={({ pressed }) => [styles.iconBtn, filterCount > 0 && styles.filterBtnOn, pressed && { opacity: 0.85 }]}
-          >
-            <AppIcon name="filter" color={filterCount > 0 ? '#fff' : colors.text} size={18} />
-            {filterCount > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{filterCount}</Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-
-        {/* Estado de la zona en su propia línea: con tres botones al lado se cortaba. */}
-        <Pressable
-          onPress={userLoc ? undefined : locate}
-          disabled={!!userLoc}
-          accessibilityRole={userLoc ? 'text' : 'button'}
-          style={styles.levelLine}
-        >
-          <View style={[styles.levelDot, { backgroundColor: level.color }]} />
-          <Text style={[styles.levelLabel, { color: level.color }]}>{level.label}</Text>
-          <Text style={styles.levelText} numberOfLines={2}>
-            · {level.text}
-          </Text>
-        </Pressable>
-
-        <ActiveFilters
-          selected={cats}
-          onRemove={(id) => setCats((c) => toggleCategory(c, id))}
-          onClear={() => setCats([])}
+      <View style={styles.mapWrap}>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          clusters={clusters}
+          hexes={hexes}
+          highlightIds={highlightIds}
+          userLocation={userLoc}
+          initialView={SPAIN_VIEW}
+          onSelect={onSelect}
         />
+
+        {/* Todo flota sobre el mapa; los huecos dejan pasar los gestos. */}
+        <View style={styles.overlay} pointerEvents="box-none">
+          <View style={styles.titleRow} pointerEvents="box-none">
+            <View style={styles.titleChip}>
+              <Text style={styles.title} numberOfLines={1}>
+                Mapa vecinal
+              </Text>
+            </View>
+            <View style={{ flex: 1 }} pointerEvents="none" />
+
+            <BellButton onPress={onOpenNotifications} />
+
+            <Pressable
+              onPress={locate}
+              accessibilityRole="button"
+              accessibilityLabel="Centrar el mapa en mi ubicación"
+              style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.8 }]}
+            >
+              <AppIcon name="locate" color={colors.text} size={20} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => setFiltersOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={filterCount > 0 ? `Filtros, ${filterCount} activos` : 'Filtros'}
+              style={({ pressed }) => [styles.iconBtn, filterCount > 0 && styles.filterBtnOn, pressed && { opacity: 0.85 }]}
+            >
+              <AppIcon name="filter" color={filterCount > 0 ? '#fff' : colors.text} size={18} />
+              {filterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{filterCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+
+          {/* Nivel de la zona: las ondas del logo, del color del nivel. */}
+          <Pressable
+            onPress={userLoc ? undefined : locate}
+            disabled={!!userLoc}
+            accessibilityRole={userLoc ? 'text' : 'button'}
+            accessibilityLabel={`${level.label}. ${level.text}`}
+            style={styles.levelCard}
+          >
+            <View style={[styles.radar, { borderColor: level.color + '33' }]}>
+              <View style={[styles.radarMid, { borderColor: level.color + '77' }]}>
+                <View style={[styles.radarDot, { backgroundColor: level.color }]} />
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.levelLabel, { color: level.color }]}>{level.label}</Text>
+              <Text style={styles.levelText} numberOfLines={2}>
+                {level.text}
+              </Text>
+            </View>
+          </Pressable>
+
+          <ActiveFilters
+            selected={cats}
+            onRemove={(id) => setCats((c) => toggleCategory(c, id))}
+            onClear={() => setCats([])}
+          />
+        </View>
       </View>
 
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        clusters={clusters}
-        hexes={hexes}
-        highlightIds={highlightIds}
-        userLocation={userLoc}
-        initialView={SPAIN_VIEW}
-        onSelect={onSelect}
-      />
-
       <View style={styles.panel}>
+        <View style={styles.grab} />
         {selectedIncidents.length > 0 ? (
           <>
             <View style={styles.panelHead}>
@@ -315,40 +329,37 @@ export const HomeScreen = ({ focusId = null, focusNonce = 0, onOpenIncident, onO
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, gap: 8 },
+  root: { flex: 1, backgroundColor: colors.surface },
+  mapWrap: { flex: 1 },
+  map: { flex: 1 },
+  overlay: { position: 'absolute', top: 8, left: 12, right: 12, gap: 8 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { flex: 1, color: colors.text, fontSize: 24, fontWeight: '800' },
-  levelLine: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 20 },
-  levelDot: { width: 9, height: 9, borderRadius: 5 },
-  levelLabel: { fontSize: 13, fontWeight: '800' },
-  levelText: { flex: 1, color: colors.muted, fontSize: 13 },
-  iconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterBadge: { position: 'absolute', top: -3, right: -3, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: colors.text, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  filterBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
-  map: { flex: 1, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.line },
-  panel: { backgroundColor: colors.bg, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, minHeight: 64 },
+  titleChip: { height: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: colors.surface, justifyContent: 'center', ...shadow.float },
+  title: { color: colors.text, fontSize: 17, fontFamily: font.extra },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', ...shadow.float },
+  filterBtnOn: { backgroundColor: colors.primary },
+  filterBadge: { position: 'absolute', top: -3, right: -3, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: colors.text, borderWidth: 2, borderColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  filterBadgeText: { color: '#fff', fontSize: 11, fontFamily: font.extra },
+  levelCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 20, paddingVertical: 10, paddingHorizontal: 14, ...shadow.float },
+  radar: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  radarMid: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  radarDot: { width: 10, height: 10, borderRadius: 5 },
+  levelLabel: { fontSize: 15, fontFamily: font.extra },
+  levelText: { color: colors.muted, fontSize: 12, fontFamily: font.body, marginTop: 1 },
+  // El panel se solapa con el mapa: esquinas redondeadas y sombra hacia arriba.
+  panel: { backgroundColor: colors.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, marginTop: -22, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, minHeight: 64, shadowColor: '#1B2559', shadowOpacity: 0.12, shadowRadius: 14, shadowOffset: { width: 0, height: -6 }, elevation: 12 },
+  grab: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.line, alignSelf: 'center', marginBottom: 10 },
   panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  panelTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  panelTitle: { color: colors.text, fontSize: 15, fontFamily: font.extra },
   panelClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
   list: { gap: 8, paddingBottom: 4 },
   hint: { gap: 8, alignItems: 'center' },
-  hintText: { color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  hintText: { color: colors.muted, fontSize: 13, fontFamily: font.semi, textAlign: 'center' },
   legend: { flexDirection: 'row', gap: 14, flexWrap: 'wrap', justifyContent: 'center' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 9, height: 9, borderRadius: 5 },
-  legendLabel: { color: colors.muted, fontSize: 11, fontWeight: '700' },
+  legendLabel: { color: colors.muted, fontSize: 11, fontFamily: font.bold },
   empty: { alignItems: 'center', gap: 6, paddingVertical: 4 },
-  emptyTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
-  emptyAction: { color: colors.accent, fontSize: 13, fontWeight: '800' },
+  emptyTitle: { color: colors.text, fontSize: 14, fontFamily: font.extra },
+  emptyAction: { color: colors.accent, fontSize: 13, fontFamily: font.extra },
 });

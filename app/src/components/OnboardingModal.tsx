@@ -173,13 +173,13 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 24,
-    fontWeight: '900',
+    fontFamily: 'PlusJakartaSans_800ExtraBold',
     textAlign: 'center',
     letterSpacing: -0.4,
   },
   subtitle: {
     color: colors.muted,
-    fontSize: 14,
+    fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
     marginTop: -8,
@@ -212,11 +212,11 @@ const styles = StyleSheet.create({
   featureTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'PlusJakartaSans_800ExtraBold',
   },
   featureDesc: {
     color: colors.muted,
-    fontSize: 12,
+    fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12,
     lineHeight: 17,
   },
   disclaimerBox: {
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   disclaimerText: {
     color: colors.textMuted,
-    fontSize: 11,
+    fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11,
     lineHeight: 16,
     textAlign: 'center',
   },
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   ctaText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'PlusJakartaSans_800ExtraBold',
     letterSpacing: 0.2,
   },
 });

@@ -12,7 +12,7 @@ import { readableAddress } from '../lib/address';
 import { ApiError, apiAppealIncident, apiGetMessages, apiPostMessage, incidentPhotoUrl, incidentShareUrl } from '../lib/api';
 import { HOURS_VISIBLE, checkText, timeAgo } from '../lib/privacy';
 import { useIncidents } from '../store';
-import { colors, radius, severityColor, severityLabel } from '../theme';
+import { colors, font, radius, severityColor, severityLabel, shadow } from '../theme';
 
 interface Props {
   incidentId: string;
@@ -105,23 +105,32 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
-      {header}
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) + 24 }]} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <View style={[styles.heroIcon, { backgroundColor: sev + '22', borderColor: sev + '55' }]}>
-            <CategoryIcon id={incident.category} color={sev} size={34} strokeWidth={2.2} />
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 24 }} showsVerticalScrollIndicator={false}>
+        {/* Cabecera teñida con el color de la categoría. */}
+        <View style={[styles.hero, { backgroundColor: sev + '24', paddingTop: insets.top + 8 }]}>
+          <View style={styles.heroBar}>
+            <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Volver" style={styles.round}>
+              <AppIcon name="chevron-left" color={colors.text} size={22} />
+            </Pressable>
+            <Pressable onPress={() => onShare(incident)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Compartir este aviso" style={styles.round}>
+              <AppIcon name="share" color={colors.text} size={18} />
+            </Pressable>
+          </View>
+          <View style={[styles.heroIcon, { backgroundColor: sev }]}>
+            <CategoryIcon id={incident.category} color="#fff" size={30} strokeWidth={2.2} />
           </View>
           <Text style={styles.title}>{cat.label}</Text>
           <View style={styles.pills}>
-            <View style={[styles.pill, { backgroundColor: sev + '18', borderColor: sev + '60' }]}>
-              <Text style={[styles.pillText, { color: sev }]}>{severityLabel[cat.severity]}</Text>
+            <View style={styles.pill}>
+              <View style={[styles.pillDot, { backgroundColor: sev }]} />
+              <Text style={styles.pillText}>{severityLabel[cat.severity]}</Text>
             </View>
             <View style={styles.pill}>
               <AppIcon name="clock" color={colors.muted} size={12} />
               <Text style={styles.pillText}>{timeAgo(incident.createdAt)}</Text>
             </View>
-            <View style={[styles.pill, verified && styles.pillOk]}>
+            <View style={styles.pill}>
               <AppIcon name={verified ? 'shield-check' : 'clock'} color={verified ? colors.ok : colors.muted} size={12} />
               <Text style={[styles.pillText, verified && { color: colors.ok }]}>
                 {verified ? `Confirmado (${incident.confirmations})` : 'Sin confirmar'}
@@ -130,66 +139,63 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
           </View>
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.place}>
-            <AppIcon name="map-pin" color={colors.accent} size={18} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.placeMain}>{place}</Text>
-              <Text style={styles.placeSub}>Zona aproximada (~450 m). La posición exacta no se publica.</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionLabel}>Qué ha ocurrido</Text>
-          <Text style={styles.desc}>{incident.description}</Text>
+        <View style={styles.content}>
           {incident.hasPhoto && (
-            <Image
-              source={{ uri: incidentPhotoUrl(incident.id) }}
-              style={styles.photo}
-              accessibilityLabel="Foto adjunta al aviso"
-            />
+            <Image source={{ uri: incidentPhotoUrl(incident.id) }} style={styles.photo} accessibilityLabel="Foto adjunta al aviso" />
           )}
-          <Text style={styles.expiry}>{expiresIn(incident.createdAt)}</Text>
-        </View>
 
-        {incident.mine ? (
-          incident.status === 'hidden' ? (
-            <Pressable onPress={onAppeal} accessibilityRole="button" style={styles.secondary}>
-              <Text style={styles.secondaryText}>Recurrir ocultación</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.mineBox}>
-              <Text style={styles.mineText}>Este aviso es tuyo. Otros vecinos pueden confirmarlo.</Text>
+          <View style={styles.card}>
+            <View style={styles.place}>
+              <View style={styles.placeIcon}>
+                <AppIcon name="map-pin" color={colors.accent} size={18} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.placeMain}>{place}</Text>
+                <Text style={styles.placeSub}>Zona aproximada (~450 m). La posición exacta no se publica.</Text>
+              </View>
             </View>
-          )
-        ) : (
-          <Pressable
-            onPress={onConfirm}
-            disabled={incident.confirmedByMe}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.primary, incident.confirmedByMe && styles.primaryDone, pressed && { opacity: 0.85 }]}
-          >
-            <AppIcon name="check" color={incident.confirmedByMe ? colors.ok : '#fff'} size={18} strokeWidth={2.6} />
-            <Text style={[styles.primaryText, incident.confirmedByMe && { color: colors.ok }]}>
-              {incident.confirmedByMe ? 'Lo has confirmado' : 'Lo he visto'}
-            </Text>
-          </Pressable>
-        )}
+            <View style={styles.rule} />
+            <Text style={styles.desc}>{incident.description}</Text>
+            <Text style={styles.expiry}>{expiresIn(incident.createdAt)}</Text>
+          </View>
 
-        {incident.zone.lat != null && incident.zone.lng != null && (
-          <Pressable onPress={() => onShowOnMap(incident.id)} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.85 }]}>
-            <AppIcon name="map-pin" color={colors.primary} size={16} />
-            <Text style={styles.secondaryText}>Ver en el mapa</Text>
-          </Pressable>
-        )}
+          <View style={styles.actions}>
+            {incident.mine ? (
+              incident.status === 'hidden' ? (
+                <Pressable onPress={onAppeal} accessibilityRole="button" style={[styles.primary, { backgroundColor: colors.text }]}>
+                  <Text style={styles.primaryText}>Recurrir ocultación</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.mineBox}>
+                  <Text style={styles.mineText}>Este aviso es tuyo. Otros vecinos pueden confirmarlo.</Text>
+                </View>
+              )
+            ) : (
+              <Pressable
+                onPress={onConfirm}
+                disabled={incident.confirmedByMe}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.primary, incident.confirmedByMe && styles.primaryDone, pressed && { opacity: 0.85 }]}
+              >
+                <AppIcon name="check" color={incident.confirmedByMe ? colors.ok : '#fff'} size={18} strokeWidth={2.6} />
+                <Text style={[styles.primaryText, incident.confirmedByMe && { color: colors.ok }]}>
+                  {incident.confirmedByMe ? 'Lo has confirmado' : 'Lo he visto'}
+                </Text>
+              </Pressable>
+            )}
+            {incident.zone.lat != null && incident.zone.lng != null && (
+              <Pressable
+                onPress={() => onShowOnMap(incident.id)}
+                accessibilityRole="button"
+                accessibilityLabel="Ver en el mapa"
+                style={({ pressed }) => [styles.square, pressed && { opacity: 0.85 }]}
+              >
+                <AppIcon name="map-pin" color={colors.primary} size={20} />
+              </Pressable>
+            )}
+          </View>
 
-        <Pressable onPress={() => onShare(incident)} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.85 }]}>
-          <AppIcon name="share" color={colors.primary} size={16} />
-          <Text style={styles.secondaryText}>Compartir este aviso</Text>
-        </Pressable>
-
-        {incident.status === 'active' && <Chat incidentId={incident.id} requireIdentity={requireIdentity} />}
+          {incident.status === 'active' && <Chat incidentId={incident.id} requireIdentity={requireIdentity} />}
 
         {!incident.mine && (
           <Pressable onPress={onFlag} accessibilityRole="button" hitSlop={8} style={styles.flag}>
@@ -197,6 +203,7 @@ export const IncidentDetailScreen = ({ incidentId, onClose, onShowOnMap }: Props
             <Text style={styles.flagText}>Denunciar este aviso</Text>
           </Pressable>
         )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -299,31 +306,31 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line },
-  headerTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
-  content: { padding: 20, gap: 14 },
-  hero: { alignItems: 'center', gap: 10, paddingVertical: 6 },
-  heroIcon: { width: 72, height: 72, borderRadius: 36, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  title: { color: colors.text, fontSize: 26, fontWeight: '800', textAlign: 'center' },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 5, borderRadius: radius.pill, backgroundColor: colors.surface2, borderWidth: 1, borderColor: 'transparent' },
+  headerTitle: { color: colors.text, fontSize: 17, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  content: { padding: 16, gap: 12 },
+  hero: { paddingHorizontal: 18, paddingBottom: 22, gap: 10, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  heroIcon: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  title: { color: colors.text, fontSize: 30, fontFamily: font.extra, letterSpacing: -0.5 },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.75)' },
   pillOk: { backgroundColor: 'rgba(16,185,129,0.12)' },
-  pillText: { color: colors.muted, fontSize: 12, fontWeight: '800' },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 16, gap: 8 },
-  place: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  placeMain: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  placeSub: { color: colors.muted, fontSize: 12, marginTop: 2, lineHeight: 17 },
-  sectionLabel: { color: colors.muted, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
-  desc: { color: colors.text, fontSize: 16, lineHeight: 24 },
-  photo: { width: '100%', height: 200, borderRadius: radius.md, backgroundColor: colors.surface2, marginTop: 4 },
-  expiry: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 4 },
-  chatHint: { color: colors.muted, fontSize: 12, marginTop: -4 },
-  chatEmpty: { color: colors.muted, fontSize: 13, textAlign: 'center', paddingVertical: 10 },
+  pillText: { color: colors.muted, fontSize: 12, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: 16, gap: 10, ...shadow.card },
+  place: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  placeMain: { color: colors.text, fontSize: 16, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  placeSub: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, marginTop: 2, lineHeight: 17 },
+  sectionLabel: { color: colors.muted, fontSize: 12, fontFamily: 'PlusJakartaSans_800ExtraBold', textTransform: 'uppercase', letterSpacing: 0.6 },
+  desc: { color: colors.text, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 16, lineHeight: 24 },
+  photo: { width: '100%', height: 210, borderRadius: radius.lg, backgroundColor: colors.surface2 },
+  expiry: { color: colors.muted, fontSize: 12, fontFamily: 'PlusJakartaSans_700Bold', marginTop: 4 },
+  chatHint: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, marginTop: -4 },
+  chatEmpty: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, textAlign: 'center', paddingVertical: 10 },
   chatList: { gap: 8 },
   bubble: { maxWidth: '85%', borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 8 },
   bubbleMine: { alignSelf: 'flex-end', backgroundColor: colors.primarySoft },
   bubbleOther: { alignSelf: 'flex-start', backgroundColor: colors.surface2 },
-  bubbleAuthor: { color: colors.muted, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', marginBottom: 2 },
-  bubbleText: { color: colors.text, fontSize: 14, lineHeight: 19 },
+  bubbleAuthor: { color: colors.muted, fontSize: 10, fontFamily: 'PlusJakartaSans_800ExtraBold', textTransform: 'uppercase', marginBottom: 2 },
+  bubbleText: { color: colors.text, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, lineHeight: 19 },
   chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 4 },
   chatInput: {
     flex: 1,
@@ -336,21 +343,28 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
+    fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14,
   },
   chatSend: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   chatSendOff: { backgroundColor: colors.line },
-  chatProblem: { color: colors.danger, fontSize: 12, marginTop: 4 },
-  primary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: radius.pill, backgroundColor: colors.primary },
+  chatProblem: { color: colors.danger, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, marginTop: 4 },
+  primary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54, borderRadius: radius.pill, backgroundColor: colors.primary, ...shadow.card },
+  heroBar: { flexDirection: 'row', justifyContent: 'space-between' },
+  round: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center' },
+  pillDot: { width: 8, height: 8, borderRadius: 4 },
+  placeIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  rule: { height: 1, backgroundColor: colors.line },
+  actions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  square: { width: 54, height: 54, borderRadius: 27, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', ...shadow.card },
   primaryDone: { backgroundColor: 'rgba(16,185,129,0.12)' },
-  primaryText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  primaryText: { color: '#fff', fontSize: 16, fontFamily: 'PlusJakartaSans_800ExtraBold' },
   secondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary + '66' },
-  secondaryText: { color: colors.text, fontSize: 15, fontWeight: '800' },
-  mineBox: { backgroundColor: colors.surface2, borderRadius: radius.md, padding: 14 },
-  mineText: { color: colors.textMuted, fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  secondaryText: { color: colors.text, fontSize: 15, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  mineBox: { flex: 1, backgroundColor: colors.surface2, borderRadius: radius.md, padding: 14 },
+  mineText: { color: colors.textMuted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   flag: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, minHeight: 44 },
-  flagText: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  flagText: { color: colors.muted, fontSize: 13, fontFamily: 'PlusJakartaSans_700Bold' },
   gone: { padding: 28, alignItems: 'center', gap: 10 },
-  goneTitle: { color: colors.text, fontSize: 18, fontWeight: '800', textAlign: 'center' },
-  goneText: { color: colors.muted, fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  goneTitle: { color: colors.text, fontSize: 18, fontFamily: 'PlusJakartaSans_800ExtraBold', textAlign: 'center' },
+  goneText: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, lineHeight: 20, textAlign: 'center' },
 });

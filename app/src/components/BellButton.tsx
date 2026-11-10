@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNotifications } from '../notifications';
-import { colors } from '../theme';
+import { colors, shadow } from '../theme';
 import { AppIcon } from './AppIcon';
 
 /** Campana con el número de avisos sin leer; abre la pantalla de notificaciones. */
@@ -34,9 +34,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
     alignItems: 'center',
+    ...shadow.float,
     justifyContent: 'center',
   },
   badge: {
@@ -47,11 +46,11 @@ const styles = StyleSheet.create({
     height: 20,
     paddingHorizontal: 5,
     borderRadius: 10,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.alert,
     borderWidth: 2,
-    borderColor: colors.bg,
+    borderColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  badgeText: { color: '#fff', fontSize: 11, fontFamily: 'PlusJakartaSans_800ExtraBold' },
 });

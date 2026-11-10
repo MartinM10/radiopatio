@@ -27,7 +27,7 @@ import { apiReverseGeocode } from '../lib/api';
 import { getUserLocation } from '../lib/userLocation';
 import { checkText } from '../lib/privacy';
 import { useIncidents } from '../store';
-import { colors, radius, severityColor } from '../theme';
+import { colors, radius, severityColor, shadow } from '../theme';
 
 const MIN = 10;
 const MAX = 280;
@@ -181,7 +181,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Pressable style={styles.urgent} onPress={() => Linking.openURL('tel:112').catch(() => {})}>
             <View style={styles.urgentIconWrap}>
-              <AppIcon name="shield-alert" color={colors.primary} size={26} />
+              <AppIcon name="shield-alert" color={colors.alert} size={26} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.urgentTitle}>¿Peligro ahora mismo?</Text>
@@ -231,11 +231,11 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
                   accessibilityLabel={`Categoría ${c.label}`}
                   style={({ pressed }) => [
                     styles.tile,
-                    isSelected && { borderColor: colors.primary, backgroundColor: colors.surface },
+                    isSelected && { borderColor: colors.primary },
                     pressed && { opacity: 0.82, transform: [{ scale: 0.98 }] },
                   ]}
                 >
-                  <View style={[styles.tileIconWrap, { backgroundColor: isSelected ? colors.primarySoft : colors.surface2 }]}>
+                  <View style={[styles.tileIconWrap, { backgroundColor: col + '26' }]}>
                     <CategoryIcon id={c.id} color={col} size={26} />
                   </View>
                   <Text style={styles.tileTitle}>{c.label}</Text>
@@ -266,7 +266,7 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
               accessibilityLabel="Llamar al 112"
             >
               <View style={styles.urgentIconWrap}>
-                <AppIcon name="shield-alert" color={colors.primary} size={26} />
+                <AppIcon name="shield-alert" color={colors.alert} size={26} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.urgentTitle}>¿Hay alguien en peligro?</Text>
@@ -462,17 +462,17 @@ export const ReportScreen = ({ onClose }: { onClose: () => void }) => {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8 },
-  hBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  hBtnText: { color: colors.text, fontSize: 20, fontWeight: '600' },
-  hTitle: { flex: 1, textAlign: 'center', color: colors.text, fontSize: 17, fontWeight: '800' },
-  hStep: { width: 40, textAlign: 'right', color: colors.muted, fontWeight: '700' },
+  hBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', ...shadow.card },
+  hBtnText: { color: colors.text, fontSize: 20, fontFamily: 'PlusJakartaSans_600SemiBold' },
+  hTitle: { flex: 1, textAlign: 'center', color: colors.text, fontSize: 17, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  hStep: { width: 40, textAlign: 'right', color: colors.muted, fontFamily: 'PlusJakartaSans_700Bold' },
   content: { padding: 20, paddingBottom: 50, gap: 14 },
   urgent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary + '66',
+    backgroundColor: colors.alertSoft,
+    borderColor: colors.alert + '55',
     borderWidth: 1,
     borderRadius: radius.md,
     padding: 14,
@@ -485,11 +485,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  urgentTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
-  urgentText: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  urgentCall: { color: '#fff', backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, fontWeight: '800', overflow: 'hidden' },
-  q: { color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 6 },
-  qSub: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  urgentTitle: { color: colors.text, fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15 },
+  urgentText: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, marginTop: 2 },
+  urgentCall: { color: '#fff', backgroundColor: colors.alert, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, fontFamily: 'PlusJakartaSans_800ExtraBold', overflow: 'hidden' },
+  q: { color: colors.text, fontSize: 22, letterSpacing: -0.3, fontFamily: 'PlusJakartaSans_800ExtraBold', marginTop: 6 },
+  qSub: { color: colors.muted, fontSize: 13, fontFamily: 'PlusJakartaSans_600SemiBold' },
   groupFilterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 4 },
   groupFilterPill: {
     paddingHorizontal: 12,
@@ -500,50 +500,51 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   groupFilterPillActive: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
+    backgroundColor: colors.text,
+    borderColor: colors.text,
   },
   groupFilterText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'PlusJakartaSans_700Bold',
     color: colors.muted,
   },
   groupFilterTextActive: {
-    color: colors.primary,
-    fontWeight: '800',
+    color: '#fff',
+    fontFamily: 'PlusJakartaSans_800ExtraBold',
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: {
     width: '47.8%',
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1.5,
-    borderColor: colors.line,
+    borderColor: 'transparent',
     padding: 14,
     gap: 6,
+    ...shadow.card,
   },
   tileIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
-  tileTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
-  tileHint: { color: colors.muted, fontSize: 11, lineHeight: 15 },
+  tileTitle: { color: colors.text, fontSize: 15, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  tileHint: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11, lineHeight: 15 },
   selCat: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.line },
-  selCatText: { color: colors.text, fontWeight: '800', fontSize: 13 },
-  locCard: { gap: 10, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 16 },
-  locText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  selCatText: { color: colors.text, fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13 },
+  locCard: { gap: 10, backgroundColor: colors.surface, borderRadius: radius.lg, padding: 16, ...shadow.card },
+  locText: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, lineHeight: 19 },
   locPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: radius.pill, backgroundColor: colors.primary },
-  locPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  locPrimaryText: { color: '#fff', fontSize: 15, fontFamily: 'PlusJakartaSans_800ExtraBold' },
   locSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 48, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.surface },
-  locSecondaryText: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  locSecondaryText: { color: colors.text, fontSize: 14, fontFamily: 'PlusJakartaSans_800ExtraBold' },
   locDone: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  locDoneText: { flex: 1, color: colors.muted, fontSize: 12, fontWeight: '600' },
-  locChange: { color: colors.accent, fontSize: 13, fontWeight: '800' },
-  streetLabel: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  locDoneText: { flex: 1, color: colors.muted, fontSize: 12, fontFamily: 'PlusJakartaSans_600SemiBold' },
+  locChange: { color: colors.accent, fontSize: 13, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  streetLabel: { color: colors.text, fontSize: 14, fontFamily: 'PlusJakartaSans_800ExtraBold' },
   streetBox: { gap: 8 },
   streetInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   streetInput: {
@@ -555,11 +556,11 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     paddingHorizontal: 14,
     paddingVertical: 11,
-    fontSize: 15,
+    fontFamily: 'PlusJakartaSans_500Medium', fontSize: 15,
   },
-  streetHint: { color: colors.muted, fontSize: 12, lineHeight: 16 },
+  streetHint: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, lineHeight: 16 },
   zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  zoneText: { color: colors.accent, fontSize: 12, fontWeight: '600' },
+  zoneText: { color: colors.accent, fontSize: 12, fontFamily: 'PlusJakartaSans_600SemiBold' },
   input: {
     minHeight: 110,
     textAlignVertical: 'top',
@@ -569,26 +570,26 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.line,
     padding: 14,
-    fontSize: 15,
+    fontFamily: 'PlusJakartaSans_500Medium', fontSize: 15,
     lineHeight: 21,
   },
   inputFoot: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: -6 },
   errRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  err: { flex: 1, color: colors.danger, fontSize: 12, lineHeight: 16, fontWeight: '600' },
-  count: { color: colors.muted, fontSize: 12, fontWeight: '700' },
+  err: { flex: 1, color: colors.danger, fontSize: 12, lineHeight: 16, fontFamily: 'PlusJakartaSans_600SemiBold' },
+  count: { color: colors.muted, fontSize: 12, fontFamily: 'PlusJakartaSans_700Bold' },
   ackRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   check: { width: 24, height: 24, borderRadius: 8, borderWidth: 2, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   checkOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  ackText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 19 },
+  ackText: { flex: 1, color: colors.text, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, lineHeight: 19 },
   cta: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 16, alignItems: 'center', alignSelf: 'stretch' },
   ctaOff: { opacity: 0.35 },
-  ctaText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  needs: { color: colors.muted, fontSize: 12, textAlign: 'center' },
+  ctaText: { color: '#fff', fontSize: 16, fontFamily: 'PlusJakartaSans_800ExtraBold' },
+  needs: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, textAlign: 'center' },
   okCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, marginBottom: 8 },
-  okTitle: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 6 },
-  okText: { color: colors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  okTitle: { color: colors.text, fontSize: 22, fontFamily: 'PlusJakartaSans_800ExtraBold', textAlign: 'center', marginTop: 6 },
+  okText: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, lineHeight: 20, textAlign: 'center' },
   photoSection: { marginTop: 8 },
-  photoLabel: { color: colors.text, fontSize: 14, fontWeight: '700', marginBottom: 8 },
+  photoLabel: { color: colors.text, fontSize: 14, fontFamily: 'PlusJakartaSans_700Bold', marginBottom: 8 },
   photoAdd: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -601,7 +602,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     backgroundColor: colors.surface,
   },
-  photoAddText: { color: colors.muted, fontWeight: '700', fontSize: 13 },
+  photoAddText: { color: colors.muted, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13 },
   photoPreviewWrap: { alignSelf: 'flex-start' },
   photoPreview: { width: 96, height: 96, borderRadius: radius.md, backgroundColor: colors.surface2 },
   photoRemove: {
@@ -617,7 +618,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.bg,
   },
-  photoHint: { color: colors.muted, fontSize: 11, marginTop: 6 },
+  photoHint: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11, marginTop: 6 },
   legal: { backgroundColor: colors.surface, borderRadius: radius.md, padding: 14, marginVertical: 6, borderWidth: 1, borderColor: colors.line },
-  legalText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  legalText: { color: colors.muted, fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, lineHeight: 18, textAlign: 'center' },
 });

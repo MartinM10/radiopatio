@@ -59,7 +59,8 @@
           "color": "#FF5A4F",
           "defaultChannel": "alerts"
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

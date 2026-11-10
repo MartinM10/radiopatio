@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary + '66',
   },
-  text: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  text: { color: colors.text, fontSize: 12, fontFamily: 'PlusJakartaSans_700Bold' },
   clear: { paddingHorizontal: 6, minHeight: 32, justifyContent: 'center' },
-  clearText: { color: colors.muted, fontSize: 12, fontWeight: '800' },
+  clearText: { color: colors.muted, fontSize: 12, fontFamily: 'PlusJakartaSans_800ExtraBold' },
 });

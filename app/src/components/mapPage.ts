@@ -24,21 +24,25 @@ export interface MapPageConfig {
 }
 
 const PAGE_CSS = `
-html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #EAF1F6; overflow: hidden;
+html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #E9EDF6; overflow: hidden;
   touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.leaflet-container { background: #EAF1F6 !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.leaflet-container { background: #E9EDF6 !important; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 .leaflet-control-attribution { background: rgba(255,255,255,.88) !important; color: #64748B !important; font-size: 9px !important; border-radius: 6px 0 0 0; padding: 2px 6px; }
 .leaflet-control-attribution a { color: #4F46E5 !important; }
+/* El panel inferior de la app tapa los últimos 22px del mapa: los controles suben por encima. */
+.leaflet-bottom { bottom: 22px !important; }
+.leaflet-bottom .leaflet-control-zoom { margin-right: 12px !important; margin-bottom: 8px !important; }
 .leaflet-bar a { width: 38px !important; height: 38px !important; line-height: 38px !important; font-size: 20px !important;
   background: #fff !important; color: #0F172A !important; border-bottom: 1px solid #E2E8F0 !important; }
 .leaflet-bar { box-shadow: 0 2px 8px rgba(15,23,42,.18) !important; border: none !important; border-radius: 10px !important; overflow: hidden; }
 .custom-pin { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;
-  background: #fff; border: 2.5px solid #FF5A4F; box-shadow: 0 3px 12px rgba(0,0,0,.2); cursor: pointer;
+  background: #fff; border: 2.5px solid #FF5A4F; color: #FF5A4F;
+  box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 20%, transparent), 0 6px 14px rgba(27,37,89,.28); cursor: pointer;
   transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s; box-sizing: border-box; }
 .custom-pin svg { width: 20px; height: 20px; }
 .custom-pin.selected { transform: scale(1.22); box-shadow: 0 0 0 5px rgba(79,70,229,.32), 0 4px 14px rgba(0,0,0,.25); }
 .count-pin { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%;
-  border: 3px solid #fff; box-shadow: 0 3px 12px rgba(0,0,0,.3); color: #fff; font-weight: 800; font-size: 18px; cursor: pointer;
+  border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(27,37,89,.10), 0 6px 14px rgba(27,37,89,.3); color: #fff; font-weight: 800; font-size: 18px; cursor: pointer;
   transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s; box-sizing: border-box; }
 .count-pin.selected { transform: scale(1.18); box-shadow: 0 0 0 5px rgba(79,70,229,.32), 0 4px 14px rgba(0,0,0,.3); }
 .pick-pin { filter: drop-shadow(0 4px 6px rgba(0,0,0,.35)); cursor: grab; }
@@ -90,8 +94,9 @@ const PAGE_SCRIPT = String.raw`
   }
   function r5(n) { return Math.round(n * 100000) / 100000; }
 
-  var map = L.map('map', { zoomControl: true, attributionControl: true, tap: false, bounceAtZoomLimits: false })
+  var map = L.map('map', { zoomControl: false, attributionControl: true, tap: false, bounceAtZoomLimits: false })
     .setView([CFG.lat, CFG.lng], CFG.zoom);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
   map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, subdomains: 'abc',
@@ -114,7 +119,7 @@ const PAGE_SCRIPT = String.raw`
         html: '<div class="count-pin' + hi + '" style="background:' + esc(c.color) + '">' + c.count + '</div>' });
     }
     return L.divIcon({ className: 'custom-pin-wrap', iconSize: [40, 40], iconAnchor: [20, 20],
-      html: '<div class="custom-pin' + hi + '" style="border-color:' + esc(c.color) + '">' + svg(c.category, c.color) + '</div>' });
+      html: '<div class="custom-pin' + hi + '" style="border-color:' + esc(c.color) + ';color:' + esc(c.color) + '">' + svg(c.category, c.color) + '</div>' });
   }
   function hexStyle(h) {
     var hi = isHi(h.ids);
