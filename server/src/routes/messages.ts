@@ -23,27 +23,48 @@ interface MessageRow {
   device_hash: string;
 }
 
+/**
+ * Cómo se ve cada mensaje: si es del propio lector, si lo escribió el autor del
+ * aviso y, para los demás, un número por orden de primera intervención («Vecino 1»,
+ * «Vecino 2»…) que solo vale dentro de este aviso. Nunca sale el device_hash.
+ */
+function describeMessages(rows: MessageRow[], authorHash: string, myHash: string) {
+  const numbers = new Map<string, number>();
+  return rows.map((r) => {
+    const fromAuthor = r.device_hash === authorHash;
+    let participant: number | null = null;
+    if (!fromAuthor) {
+      if (!numbers.has(r.device_hash)) numbers.set(r.device_hash, numbers.size + 1);
+      participant = numbers.get(r.device_hash) ?? null;
+    }
+    return {
+      id: r.id,
+      body: r.body,
+      createdAt: new Date(r.created_at).getTime(),
+      mine: r.device_hash === myHash,
+      fromAuthor,
+      participant,
+    };
+  });
+}
+
+const loadMessages = (incidentId: string) =>
+  pool.query<MessageRow>(
+    `SELECT id, body, created_at, device_hash FROM incident_messages WHERE incident_id = $1 ORDER BY created_at ASC, id ASC LIMIT 200`,
+    [incidentId],
+  );
+
 export async function messageRoutes(app: FastifyInstance) {
   // GET /api/incidents/:id/messages — lectura pública, como el resto del aviso.
   app.get<{ Params: { id: string } }>('/api/incidents/:id/messages', async (req, reply) => {
     const { id } = req.params;
-    const incRes = await pool.query(`SELECT id FROM incidents WHERE id = $1 AND status = 'active'`, [id]);
+    const incRes = await pool.query(`SELECT device_hash FROM incidents WHERE id = $1 AND status = 'active'`, [id]);
     if (incRes.rowCount === 0) {
       return reply.status(404).send({ error: 'INCIDENT_NOT_FOUND', message: 'Aviso no encontrado o inactivo' });
     }
     const myHash = await resolveReadHash(req);
-    const rows = await pool.query<MessageRow>(
-      `SELECT id, body, created_at, device_hash FROM incident_messages WHERE incident_id = $1 ORDER BY created_at ASC LIMIT 200`,
-      [id],
-    );
-    return {
-      data: rows.rows.map((r) => ({
-        id: r.id,
-        body: r.body,
-        createdAt: new Date(r.created_at).getTime(),
-        mine: r.device_hash === myHash,
-      })),
-    };
+    const rows = await loadMessages(id);
+    return { data: describeMessages(rows.rows, incRes.rows[0].device_hash as string, myHash) };
   });
 
   // POST /api/incidents/:id/messages
@@ -84,14 +105,9 @@ export async function messageRoutes(app: FastifyInstance) {
 
       void notifyMessage(id, incident.category, incident.device_hash, auth.deviceHash, parsed.data.body);
 
-      return reply.status(201).send({
-        data: {
-          id: inserted.rows[0].id,
-          body: parsed.data.body,
-          createdAt: new Date(inserted.rows[0].created_at).getTime(),
-          mine: true,
-        },
-      });
+      const all = describeMessages((await loadMessages(id)).rows, incident.device_hash, auth.deviceHash);
+      const created = all.find((m) => m.id === inserted.rows[0].id);
+      return reply.status(201).send({ data: created });
     },
   );
 

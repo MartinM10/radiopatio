@@ -6,7 +6,7 @@ import { AppIcon } from '../components/AppIcon';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { useIdentity } from '../components/IdentityGate';
 import { categoryById } from '../data/categories';
-import { Incident, IncidentMessage } from '../data/types';
+import { Incident, IncidentMessage, messageAuthorLabel } from '../data/types';
 import { areaName } from '../data/neighborhood';
 import { readableAddress } from '../lib/address';
 import { ApiError, apiAppealIncident, apiGetMessages, apiPostMessage, incidentPhotoUrl, incidentShareUrl } from '../lib/api';
@@ -253,7 +253,7 @@ const Chat = ({ incidentId, requireIdentity }: { incidentId: string; requireIden
   return (
     <View style={styles.card}>
       <Text style={styles.sectionLabel}>Chat del aviso</Text>
-      <Text style={styles.chatHint}>Anónimo: nadie ve quién escribe, ni siquiera entre vosotros.</Text>
+      <Text style={styles.chatHint}>Anónimo: nadie ve quién escribe, solo si es el autor o qué número de vecino es.</Text>
 
       {!loaded ? (
         <ActivityIndicator color={colors.muted} style={{ marginVertical: 10 }} />
@@ -263,7 +263,7 @@ const Chat = ({ incidentId, requireIdentity }: { incidentId: string; requireIden
         <View style={styles.chatList}>
           {messages.map((m) => (
             <View key={m.id} style={[styles.bubble, m.mine ? styles.bubbleMine : styles.bubbleOther]}>
-              <Text style={styles.bubbleAuthor}>{m.mine ? 'Tú' : 'Un vecino'}</Text>
+              <Text style={styles.bubbleAuthor}>{messageAuthorLabel(m)}</Text>
               <Text style={styles.bubbleText}>{m.body}</Text>
             </View>
           ))}

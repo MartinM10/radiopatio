@@ -69,7 +69,7 @@ export const IdentityProvider = ({ children }: { children: React.ReactNode }) =>
 
             <View style={styles.points}>
               <Point text="Nadie verá quién publica: ni otros vecinos ni los moderadores." />
-              <Point text="No guardamos tu nombre, tu email ni tu foto." />
+              <Point text="No guardamos tu nombre, tu email ni tu foto de perfil." />
               <Point text="Para ver el mapa y los avisos no necesitas cuenta." />
             </View>
 

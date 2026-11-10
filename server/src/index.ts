@@ -5,6 +5,7 @@ import { runMigrations } from './db/migrate';
 import { seedIfEmpty } from './db/seed';
 import { purgeExpiredIncidents } from './db/purge';
 import { backfillMunicipalities } from './lib/municipality';
+import { startReceiptPolling } from './lib/notify';
 
 async function start() {
   // Fail-closed: con secretos por defecto o débiles, producción no arranca.
@@ -46,6 +47,9 @@ async function start() {
       .catch((err) => console.error('[retención] purga fallida:', err));
   }, config.purgeIntervalMinutes * 60_000);
   purgeTimer.unref();
+
+  // Recibos de las notificaciones push: los fallos de entrega se registran.
+  startReceiptPolling();
 
   const gracefulShutdown = async (signal: string) => {
     console.log(`Received ${signal}. Shutting down gracefully...`);
