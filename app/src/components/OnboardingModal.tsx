@@ -84,7 +84,7 @@ export const OnboardingModal: React.FC<Props> = ({
               <View style={styles.featureTextCol}>
                 <Text style={styles.featureTitle}>Anónimo para tus vecinos</Text>
                 <Text style={styles.featureDesc}>
-                  Para publicar verificas una vez tu cuenta de Google, pero nadie ve quién eres y no guardamos tu nombre, email ni foto.
+                  Para publicar verificas una vez tu cuenta de Google, pero nadie ve quién eres y no guardamos tu nombre, email ni foto de perfil.
                 </Text>
               </View>
             </View>
