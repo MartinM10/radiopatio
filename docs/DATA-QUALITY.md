@@ -15,7 +15,7 @@
 | **Unicidad** | No hay avisos repetidos ni colisiones de ID | — | **Deduplicación semántica entre cuentas** (misma celda hex + categoría + similitud ≥ 0,75 en 45 min → 409), IDs `u{ts}_{hex}` |
 | **Consistencia** | El estado no se contradice | Confirmación una vez por dispositivo, no sobre avisos propios; conteo en transacción (`FOR UPDATE`) | Igual + `confirmations_count` transaccional en PostgreSQL |
 | **Frescura / retención** | El dato viejo no se muestra ni se retiene | Caché purgada en cada guarda (`pruneExpired`) | Listado y publicación filtran por TTL **y purge físicamente** (`db/purge.ts`, job cada 15 min + en cada lectura) |
-| **Veracidad / confianza** | El dato no verificado no pesa como verificado | `trustWeight` (0,5) en el grid hexagonal | `GET /api/zones/alert` solo suma avisos confirmados (≥ 2 vecinos) y exige **muestra mínima** (`sampleSufficient`) |
+| **Veracidad / confianza** | El dato no verificado no pesa como verificado | `trustWeight` (0,5) en el grid hexagonal | `GET /api/zones/alert` solo suma avisos de seguridad confirmados (≥ `VERIFIED_AT` vecinos, 3 por defecto) y exige **muestra mínima** (`sampleSufficient`) |
 | **Privacidad como calidad** | Un dato que incumple privacidad es un dato defectuoso | Filtro RGPD en la entrada y **también al leer la caché** | El mismo filtro corre en cada POST; los triggers del servidor jamás devuelven GPS exacto (solo centro de celda hex ~450 m) |
 | **Integridad / persistencia** | El almacenamiento corrupto o manipulado no llega a la UI | `parseStoredIncidents` valida cada registro del caché; JSON corrupto nunca en la UI | PostgreSQL transaccional; **guard de paridad** `schema.sql` ↔ `schema.ts` en tests |
 | **Geografía fiel** | La celda la decide quien conoce la verdad: el servidor | El cliente snappea igual (código espejo) para dibujar | `server/src/lib/geo.ts` deriva la celda desde lat/lng; el `gx/gy` del cliente se ignora cuando hay GPS |
@@ -32,7 +32,7 @@ POST /api/incidents (servidor = única puerta de verdad)
   3. zod: categoría + zona + descripción (10-280)
   4. filtro de privacidad server-side (checkText espejo)
   5. anti-abuso: máx. 5 avisos/hora por dispositivo + hueco mín. 1 min
-  6. purga de caducados (> 72 h se borran físicamente)
+  6. purga de caducados (al llegar su `expires_at` se borran físicamente; las coordenadas exactas, a las 72 h)
   7. deduplicación semántica entre cuentas (celda hex + texto) → 409 «confírmalo»
   8. celda hexagonal derivada EN SERVIDOR desde lat/lng (el cliente no la decide)
   9. INSERT transaccional con hex_key/hex_lat/hex_lng
@@ -58,7 +58,7 @@ Consumo
 | Regla | Valor | Racional |
 |---|---|---|
 | `MIN_DESC` / `MAX_DESC` | 10 / 280 | Suficiente para ser útil, corto para ser legible |
-| Retención | 72 h | Minimización (RGPD): pasado el plazo, el dato se BORRA (no solo oculta) |
+| Retención | por tipo, de 12 h a 7 días (`ttlHours` de cada categoría); coordenadas exactas 72 h | Minimización (RGPD): pasado el plazo, el dato se BORRA (no solo oculta) |
 | `CONFIRMED_AT` | 2 | Definición de «confirmado por vecinos» en toda la app |
 | `TRUST_UNCONFIRMED` | 0.5 | Un aviso sin confirmar no dispara alarmas solo |
 | `MAX_PER_HOUR` / `MIN_GAP_MS` | 5/h y 60 s | Anti-spam sin frenar al vecino legítimo |
@@ -82,7 +82,7 @@ Consumo
 - **`server/src/tests/routes.quality.test.ts`** — integración con BD: dedup
   entre cuentas (409), hueco mínimo (429), **fuga de coordenadas imposible**
   (lista devuelve el centro de celda), estadística de zona con confirmados y
-  muestra, moderación con cola/auditoría/token, y purga física a 72 h.
+  muestra, moderación con cola/auditoría/token, y purga física al caducar cada aviso.
 - **`app/tests/dataQuality.test.ts` + `app/tests/api.test.ts`** — espejo del
   cliente: saneado del caché (`sanitizeIncident` / `parseStoredIncidents`),
   json corrupto, retención, `trustWeight`, dedup, filtro de privacidad,

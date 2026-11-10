@@ -6,7 +6,7 @@ App móvil (React Native + Expo) para que los vecinos avisen de forma **anónima
 
 - **`app/`**: App móvil (React Native + Expo), mapa OpenStreetMap con grid hexagonal de ~450 m, feed y creación de avisos con validaciones en cliente.
 - **`server/`**: API REST en Node.js + TypeScript (Fastify) conectada a PostgreSQL, con filtro de privacidad, moderación comunitaria (DSA) y control anti-abuso sin datos personales (RGPD). El servidor revalida las mismas reglas de calidad que el cliente y **deriva la celda hexagonal en servidor**: la API devuelve el centro de la celda, nunca las coordenadas exactas del vecino.
-- **`db`**: Base de datos PostgreSQL con migraciones automáticas, caducidad de avisos a las 72 h y **purga física** periódica (minimización RGPD).
+- **`db`**: Base de datos PostgreSQL con migraciones automáticas, caducidad de avisos por tipo (de 12 h a 7 días) y **purga física** periódica (minimización RGPD).
 
 ## Probarla (Docker Compose)
 
@@ -48,7 +48,7 @@ docker compose run --rm -T server sh -c "npm run build && npm test && npm run ch
 ## Decisiones de diseño (privacidad y seguridad)
 
 - Sin cuentas ni datos personales. La ubicación se guarda en **celdas hexagonales de ~450 m**: la API devuelve el centro de la celda, nunca el GPS exacto.
-- Los avisos **caducan a las 72 h** y se purgan de la base de datos. Aparecen como «sin confirmar» hasta tener 2 confirmaciones vecinales, y en métricas agregadas pesan la mitad que los confirmados.
+- Los avisos **caducan según su tipo (de 12 horas a 7 días)** y se purgan de la base de datos; los vecinos pueden ampliarlos («¿sigue ahí?») y el autor cerrarlos («resuelto»). Las coordenadas exactas se borran siempre a las 72 h. Aparecen como «sin confirmar» hasta tener 3 confirmaciones de vecinos distintos (`VERIFIED_AT`), y en métricas agregadas pesan la mitad que los confirmados.
 - **No se registran personas** (ni identidades, ni antecedentes, ni procesos judiciales): solo hechos y zonas.
 - Toda escritura exige un **token de dispositivo emitido por el servidor** (solo se guarda su hash). Las cuentas verificadas con Google cuentan como una sola identidad, y con `REQUIRE_VERIFIED_IDENTITY=1` solo ellas pueden publicar o valorar avisos (dato pseudonimizado, ver docs/LEGAL.md).
 - Moderación comunitaria conforme a la DSA: avisos con 3 denuncias se ocultan automáticamente y pasan a la **cola de moderación con auditoría** (`/api/admin/moderation`, protected con `x-admin-token`).
