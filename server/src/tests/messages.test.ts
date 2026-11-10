@@ -162,6 +162,29 @@ test('chat anónimo: autor y vecinos se distinguen por rol y número, sin identi
   }
 });
 
+test('borrar mi identidad borra también mis mensajes en avisos de otros', async () => {
+  const app = buildApp();
+  try {
+    const inc = await publish(app, 'del-author');
+    await postMessage(app, inc.id, 'del-author', text('Mensaje del autor'));
+    await postMessage(app, inc.id, 'del-leaver', text('Mensaje que se va'));
+    await postMessage(app, inc.id, 'del-leaver', text('Otro mensaje que se va'));
+    const count = async () => (await pool.query('SELECT count(*)::int AS n FROM incident_messages WHERE incident_id = $1', [inc.id])).rows[0].n as number;
+    assert.strictEqual(await count(), 3);
+
+    const del = await app.inject({ method: 'DELETE', url: '/api/devices/me', headers: await devHeaders('del-leaver') });
+    assert.strictEqual(del.statusCode, 200, del.body);
+    assert.strictEqual(await count(), 1, 'solo queda el del autor');
+
+    // Y si borra el autor, caen el aviso y toda su conversación.
+    const delAuthor = await app.inject({ method: 'DELETE', url: '/api/devices/me', headers: await devHeaders('del-author') });
+    assert.strictEqual(delAuthor.statusCode, 200);
+    assert.strictEqual(await count(), 0);
+  } finally {
+    await app.close();
+  }
+});
+
 test('chat anónimo: solo en avisos activos', async () => {
   const app = buildApp();
   try {
