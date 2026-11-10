@@ -8,15 +8,21 @@ import {
   apiConfirmIncident,
   apiCreateIncident,
   apiFlagIncident,
+  apiGetConfig,
   apiGetIncidents,
+  apiResolveIncident,
+  apiStillThere,
 } from './lib/api';
 import { ApiError } from './lib/api';
-import { parseStoredIncidents, pruneExpired } from './lib/dataQuality';
+import { CONFIRMED_AT, parseStoredIncidents, pruneExpired, setVerifiedAt } from './lib/dataQuality';
+import { H, expiresAtOf } from './lib/lifetime';
 import { askPushOnce } from './lib/push';
 
 const KEY = 'av.incidents.v1';
-/** Confirmaciones vecinales necesarias para quitar la etiqueta "sin confirmar". */
-const CONFIRMED_AT = 2;
+/** Último umbral de verificación que dijo el servidor: se usa mientras no responde. */
+const VERIFIED_KEY = 'av.verified_at.v1';
+/** Lo que tarda en desaparecer un aviso resuelto (espejo del servidor). */
+const RESOLVED_GRACE_MS = 2 * H;
 /** Tope del caché local: evita crecer sin límite en dispositivos antiguos. */
 const CACHE_CAP = 200;
 
@@ -27,6 +33,10 @@ interface Store {
   addIncident: (p: { category: CategoryId; zone: Zone; description: string; photo?: string }) => Incident;
   confirm: (id: string) => void;
   flag: (id: string) => void;
+  /** El autor da su aviso por resuelto. */
+  resolve: (id: string) => void;
+  /** «¿Sigue ahí?»: here = true lo amplía, false pide cerrarlo. Devuelve el aviso actualizado. */
+  stillThere: (id: string, here: boolean) => Promise<{ extended: boolean; resolved: boolean } | null>;
   reset: () => void;
   isConfirmed: (i: Incident) => boolean;
 }
@@ -45,6 +55,26 @@ const getInitialSeed = (): Incident[] => (__DEV__ ? makeSeed() : []);
 export const IncidentsProvider = ({ children }: { children: React.ReactNode }) => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [ready, setReady] = useState(false);
+  // El umbral de verificación lo decide el servidor; al cambiar, se vuelve a pintar todo lo que lo usa.
+  const [verifiedAt, setVerifiedAtState] = useState(CONFIRMED_AT);
+
+  useEffect(() => {
+    AsyncStorage.getItem(VERIFIED_KEY)
+      .then((v) => {
+        if (v) {
+          setVerifiedAt(Number(v));
+          setVerifiedAtState(CONFIRMED_AT);
+        }
+      })
+      .catch(() => {});
+    apiGetConfig()
+      .then((cfg) => {
+        setVerifiedAt(cfg.verifiedAt);
+        setVerifiedAtState(CONFIRMED_AT);
+        AsyncStorage.setItem(VERIFIED_KEY, String(CONFIRMED_AT)).catch(() => {});
+      })
+      .catch(() => {});
+  }, []);
 
   const loadFromBackend = useCallback(async () => {
     try {
@@ -164,6 +194,38 @@ export const IncidentsProvider = ({ children }: { children: React.ReactNode }) =
     });
   }, []);
 
+  const resolve = useCallback((id: string) => {
+    let before: Incident | undefined;
+    setIncidents((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        before = i;
+        return { ...i, resolved: true, expiresAt: Math.min(expiresAtOf(i), Date.now() + RESOLVED_GRACE_MS) };
+      }),
+    );
+    apiResolveIncident(id)
+      .then((res) => setIncidents((prev) => prev.map((i) => (i.id === id ? { ...i, resolved: true, expiresAt: res.expiresAt } : i))))
+      .catch((err: unknown) => {
+        if (before) setIncidents((prev) => prev.map((i) => (i.id === id ? before! : i)));
+        Alert.alert('No se pudo marcar como resuelto', err instanceof ApiError ? err.message : 'Inténtalo de nuevo en un momento.');
+      });
+  }, []);
+
+  const stillThere = useCallback(async (id: string, here: boolean) => {
+    setIncidents((prev) => prev.map((i) => (i.id === id ? { ...i, presenceVote: here } : i)));
+    try {
+      const res = await apiStillThere(id, here);
+      setIncidents((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, presenceVote: here, resolved: res.resolved, expiresAt: res.expiresAt } : i)),
+      );
+      return { extended: res.extended, resolved: res.resolved };
+    } catch (err) {
+      setIncidents((prev) => prev.map((i) => (i.id === id ? { ...i, presenceVote: undefined } : i)));
+      Alert.alert('No se pudo enviar tu respuesta', err instanceof ApiError ? err.message : 'Inténtalo de nuevo en un momento.');
+      return null;
+    }
+  }, []);
+
   const reset = useCallback(() => {
     setIncidents(getInitialSeed());
     loadFromBackend();
@@ -177,10 +239,12 @@ export const IncidentsProvider = ({ children }: { children: React.ReactNode }) =
       addIncident,
       confirm,
       flag,
+      resolve,
+      stillThere,
       reset,
-      isConfirmed: (i) => i.confirmations >= CONFIRMED_AT,
+      isConfirmed: (i) => i.confirmations >= verifiedAt,
     }),
-    [incidents, ready, loadFromBackend, addIncident, confirm, flag, reset],
+    [incidents, ready, verifiedAt, loadFromBackend, addIncident, confirm, flag, resolve, stillThere, reset],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

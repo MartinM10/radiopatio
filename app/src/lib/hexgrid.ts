@@ -3,6 +3,7 @@ import { categoryById, countsForSafety } from '../data/categories';
 import { placeLabel } from '../data/places';
 import { readableAddress } from './address';
 import { CONFIRMED_AT } from './dataQuality';
+import { LEVEL_INFO, levelForScore, zoneScore } from './zoneLevel';
 
 export interface HexCell {
   id: string;
@@ -142,36 +143,11 @@ export function buildHexGridForIncidents(
     // Veracidad (docs/TRUST.md §3): los avisos sin confirmar por vecinos
     // pesan la mitad; un aviso aislado sin verificar no dispara la alerta
     // por sí solo.
-    // Emergencias y clima no cuentan para el nivel de seguridad de la celda.
-    const severityScore = data.incidents.reduce(
-      (acc, inc) =>
-        countsForSafety(inc.category)
-          ? acc + categoryById(inc.category).severity * (inc.confirmations >= CONFIRMED_AT ? 1 : 0.5)
-          : acc,
-      0,
-    );
-
-    let level: HexCell['level'] = 'tranquilo';
-    let levelLabel = 'Tranquilo';
-    let color = '#22C55E'; // Verde
-
-    if (severityScore === 0) {
-      level = 'tranquilo';
-      levelLabel = 'Tranquilo';
-      color = '#22C55E';
-    } else if (severityScore <= 3) {
-      level = 'moderado';
-      levelLabel = 'Moderado';
-      color = '#EAB308'; // Amarillo
-    } else if (severityScore <= 8) {
-      level = 'atencion';
-      levelLabel = 'Atención';
-      color = '#F97316'; // Naranja
-    } else {
-      level = 'alerta';
-      levelLabel = 'Alerta Vecinal';
-      color = '#EF4444'; // Rojo
-    }
+    // Solo cuentan los avisos de seguridad de las últimas 72 h (lib/zoneLevel.ts).
+    const severityScore = zoneScore(data.incidents);
+    const level: HexCell['level'] = levelForScore(severityScore);
+    const levelLabel = LEVEL_INFO[level].label;
+    const color = LEVEL_INFO[level].color;
 
     // Extraer nombre legible del lugar (del aviso más reciente o coordenadas)
     // Nunca coordenadas: la calle de algún aviso de la celda o, si no hay, la ciudad más próxima.

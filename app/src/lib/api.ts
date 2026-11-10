@@ -161,6 +161,32 @@ export function incidentShareUrl(id: string): string {
 /** Enlace para invitar a alguien que todavía no tiene la app. */
 export const APP_SHARE_URL = 'https://radiopatio.app/';
 
+/** Valores que decide el servidor y la app necesita conocer (umbral de verificación…). */
+export interface ServerConfig {
+  verifiedAt: number;
+  defaultTtlHours: number;
+  resolvedGraceHours: number;
+}
+
+export async function apiGetConfig(): Promise<ServerConfig> {
+  return (await apiFetch<{ data: ServerConfig }>('/api/config')).data;
+}
+
+/** El autor da su aviso por resuelto: desaparece en un par de horas. */
+export async function apiResolveIncident(id: string): Promise<{ resolved: boolean; expiresAt: number }> {
+  return (await apiFetch<{ data: { resolved: boolean; expiresAt: number } }>(`/api/incidents/${id}/resolve`, { method: 'POST' })).data;
+}
+
+/** «¿Sigue ahí?»: here = true lo amplía (si toca), false pide cerrarlo. */
+export async function apiStillThere(id: string, here: boolean): Promise<{ extended: boolean; resolved: boolean; expiresAt: number }> {
+  return (
+    await apiFetch<{ data: { extended: boolean; resolved: boolean; expiresAt: number } }>(`/api/incidents/${id}/still-there`, {
+      method: 'POST',
+      body: JSON.stringify({ here }),
+    })
+  ).data;
+}
+
 export async function apiGetMessages(incidentId: string): Promise<IncidentMessage[]> {
   const res = await apiFetch<{ data: IncidentMessage[] }>(`/api/incidents/${incidentId}/messages`);
   return res.data;

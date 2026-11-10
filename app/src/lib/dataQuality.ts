@@ -1,5 +1,6 @@
 import { categories } from '../data/categories';
 import { Incident } from '../data/types';
+import { isExpired } from './lifetime';
 import { checkText } from './privacy';
 
 /**
@@ -17,8 +18,17 @@ export const MAX_DESC = 280;
 export const CONFIRMATIONS_CAP = 999;
 
 // ── Confianza (docs/TRUST.md §3) ────────────────────────────────────────────
-/** Confirmaciones vecinales para considerar un aviso verificado. */
-export const CONFIRMED_AT = 2;
+/** Valor por defecto si el servidor aún no ha respondido (el servidor manda: GET /api/config). */
+export const DEFAULT_VERIFIED_AT = 3;
+/**
+ * Confirmaciones vecinales para considerar un aviso verificado. Es `let` a
+ * propósito: la app lo actualiza con el valor del servidor (setVerifiedAt) y
+ * todo lo que lo lee —pesos, etiquetas, mapa— ve el valor actual.
+ */
+export let CONFIRMED_AT = DEFAULT_VERIFIED_AT;
+export const setVerifiedAt = (n: number): void => {
+  if (Number.isFinite(n)) CONFIRMED_AT = Math.min(20, Math.max(2, Math.round(n)));
+};
 /** Peso de un aviso sin confirmar en métricas agregadas (mapa de calor, alertas). */
 export const TRUST_UNCONFIRMED = 0.5;
 
@@ -26,18 +36,14 @@ export const trustWeight = (i: Pick<Incident, 'confirmations'>): number =>
   i.confirmations >= CONFIRMED_AT ? 1 : TRUST_UNCONFIRMED;
 
 // ── Retención y frescura ────────────────────────────────────────────────────
-const RETENTION_MS = 72 * 3_600_000;
 /** Tolerancia a desfase de reloj: un aviso no puede ser "del futuro". */
 const CLOCK_SKEW_MS = 5 * 60_000;
 /** Antigüedad máxima de un dato en caché antes de considerarlo inválido. */
 const MAX_AGE_MS = 30 * 24 * 3_600_000;
 
-export const isExpired = (createdAt: number, now: number = Date.now()): boolean =>
-  now - createdAt >= RETENTION_MS;
-
-/** Minimización: los caducados se purgan del caché en cada guarda. */
+/** Minimización: los caducados se purgan del caché en cada guarda (cada aviso con su caducidad). */
 export const pruneExpired = (incidents: Incident[], now: number = Date.now()): Incident[] =>
-  incidents.filter((i) => !isExpired(i.createdAt, now));
+  incidents.filter((i) => !isExpired(i, now));
 
 // ── Validación de campos ────────────────────────────────────────────────────
 const CATEGORY_IDS = new Set<string>(categories.map((c) => c.id));
@@ -110,7 +116,7 @@ export const findDuplicate = (
   now: number = Date.now(),
 ): { id: string; minutesAgo: number } | null => {
   for (const i of incidents) {
-    if (isExpired(i.createdAt, now)) continue;
+    if (isExpired(i, now)) continue;
     if (i.category !== candidate.category) continue;
     if (i.zone.gx !== candidate.zone.gx || i.zone.gy !== candidate.zone.gy) continue;
     if (now - i.createdAt > DEDUP_WINDOW_MS) continue;
@@ -157,6 +163,11 @@ export const sanitizeIncident = (raw: unknown, now: number = Date.now()): Incide
     finite(r.confirmations) ? Math.min(CONFIRMATIONS_CAP, Math.max(0, Math.floor(r.confirmations))) : 0;
 
   const out: Incident = { id, category: r.category, zone, description, createdAt: r.createdAt, confirmations };
+  if (finite(r.expiresAt) && r.expiresAt >= r.createdAt && r.expiresAt <= r.createdAt + MAX_AGE_MS) out.expiresAt = r.expiresAt;
+  if (r.resolved === true) out.resolved = true;
+  if (r.hasPhoto === true) out.hasPhoto = true;
+  if (r.status === 'active' || r.status === 'pending') out.status = r.status;
+  if (typeof r.presenceVote === 'boolean') out.presenceVote = r.presenceVote;
   if (r.confirmedByMe === true) out.confirmedByMe = true;
   if (r.flaggedByMe === true) out.flaggedByMe = true;
   if (r.mine === true) out.mine = true;
@@ -196,7 +207,7 @@ export const parseStoredIncidents = (
       continue;
     }
     seen.add(inc.id);
-    if (isExpired(inc.createdAt, now)) {
+    if (isExpired(inc, now)) {
       expired++;
       continue;
     }
