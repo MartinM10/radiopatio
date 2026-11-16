@@ -18,6 +18,9 @@ docs/GOOGLE_PLAY_KIT.md
 # Activos gráficos generados para Google Play
 app/assets/google-play-*
 
+# Preferencias del editor (cada persona tiene las suyas)
+.vscode/
+
 # Claves PRIVADAS de servidor de Firebase/Google (FCM V1): se suben a EAS, nunca al repo.
 # (app/google-services.json sí se commitea: solo lleva identificadores de cliente.)
 *-firebase-adminsdk-*.json
